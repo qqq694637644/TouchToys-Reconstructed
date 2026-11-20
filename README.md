@@ -6,17 +6,17 @@ Independent C# reconstruction of the supplied TouchToys 0.8.54.0 Windows package
 
 ## Technology
 
-- C# / .NET 8
+- C# / .NET 8 (application), .NET 10 SDK (build tooling)
 - WinUI 3 and Windows App SDK 1.8
 - Windows SDK 10.0.22621
 - MSIX packaging
 - x64 and ARM64 targets
 
-The main application UI and behavior are implemented in C#. The supplied package did not contain the original XAML source, so the compiled `App.xbf` resource is retained and copied as the `App.xaml` package resource during build. The rest of the recovered C# project is editable source.
+The main application UI and behavior are implemented in C#. `App.xaml` was reconstructed from the original compiled XBF resource using XbfKit. `Build-Msix.ps1` regenerates the WinUI XBF 2.1 (MUX) resource from that editable source before publishing. The checked-in `App.xbf` keeps ordinary IDE builds working without running the separate compiler tool.
 
 ## Build
 
-On Windows with the .NET 8 SDK and Windows 10/11 SDK installed:
+On Windows with the .NET 8 runtime/SDK, .NET 10 SDK, and Windows 10/11 SDK installed:
 
 ```powershell
 dotnet build .\TouchToys.sln -c Release
@@ -29,11 +29,17 @@ Run the deterministic core regression suite:
 dotnet run --project .\tests\TouchToys.RegressionTests\TouchToys.RegressionTests.csproj -c Release -r win-x64
 ```
 
+If you edit the recovered XAML resources directly, regenerate the packaged WinUI XBF resource with:
+
+```powershell
+dotnet run --project .\tools\XbfCompiler\XbfCompiler.csproj -c Release -- .\src\TouchToys\App.xaml .\src\TouchToys\App.xbf
+```
+
 Create an MSIX package:
 
 ```powershell
-.scripts\Build-Msix.ps1 -Architecture x64
-.scripts\Build-Msix.ps1 -Architecture arm64
+.\scripts\Build-Msix.ps1 -Architecture x64
+.\scripts\Build-Msix.ps1 -Architecture arm64
 ```
 
 The script writes packages under `artifacts/`. The production manifest in `src/TouchToys/Package/AppxManifest.xml` retains the `uiAccess` capability. Production installation therefore requires a certificate trusted for that capability; no signing certificate or private key is included in this repository.

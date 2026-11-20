@@ -14,6 +14,9 @@ $ErrorActionPreference = 'Stop'
 
 $repoRoot = Split-Path -Parent $PSScriptRoot
 $project = Join-Path $repoRoot 'src\TouchToys\TouchToys.csproj'
+$xbfCompiler = Join-Path $repoRoot 'tools\XbfCompiler\XbfCompiler.csproj'
+$xamlSource = Join-Path $repoRoot 'src\TouchToys\App.xaml'
+$xbfOutput = Join-Path $repoRoot 'src\TouchToys\App.xbf'
 $manifestName = if ($CiManifest) { 'AppxManifest.CI.xml' } else { 'AppxManifest.xml' }
 $manifestSource = Join-Path $repoRoot "src\TouchToys\Package\$manifestName"
 $applicationManifest = Join-Path $repoRoot 'src\TouchToys\app.manifest'
@@ -22,15 +25,35 @@ $publishDirectory = Join-Path $artifactRoot "publish\$Architecture"
 $layoutDirectory = Join-Path $artifactRoot "package-layout\$Architecture"
 $runtimeIdentifier = "win-$Architecture"
 
+function Invoke-RepoDotnet {
+    param([Parameter(Mandatory = $true)][string[]]$Arguments)
+    Push-Location -LiteralPath $repoRoot
+    try {
+        & dotnet @Arguments
+        $exitCode = $LASTEXITCODE
+    } finally {
+        Pop-Location
+    }
+    if ($exitCode -ne 0) {
+        throw "dotnet command failed with exit code ${exitCode}: dotnet $($Arguments -join ' ')"
+    }
+}
+
 if (-not (Test-Path -LiteralPath $project)) {
     throw "Project not found: $project"
 }
 if (-not (Test-Path -LiteralPath $manifestSource)) {
     throw "Package manifest not found: $manifestSource"
 }
+if (-not (Test-Path -LiteralPath $xbfCompiler) -or -not (Test-Path -LiteralPath $xamlSource)) {
+    throw 'The XBF compiler project or App.xaml source is missing.'
+}
 
 Remove-Item -LiteralPath $publishDirectory, $layoutDirectory -Recurse -Force -ErrorAction SilentlyContinue
 New-Item -ItemType Directory -Force -Path $publishDirectory, $layoutDirectory | Out-Null
+
+Write-Host 'Compiling editable App.xaml to WinUI XBF 2.1 (MUX)...'
+Invoke-RepoDotnet -Arguments @('run', '--project', $xbfCompiler, '--configuration', 'Release', '--', $xamlSource, $xbfOutput)
 
 Write-Host "Publishing $runtimeIdentifier ($Configuration)..."
 $publishArguments = @(
@@ -48,10 +71,7 @@ if ($CiManifest) {
     [System.IO.File]::WriteAllText($ciApplicationManifest, $manifestText, [System.Text.UTF8Encoding]::new($false))
     $publishArguments += "-p:ApplicationManifest=$ciApplicationManifest"
 }
-& dotnet @publishArguments
-if ($LASTEXITCODE -ne 0) {
-    throw "dotnet publish failed with exit code $LASTEXITCODE"
-}
+Invoke-RepoDotnet -Arguments $publishArguments
 
 $buildOutput = Join-Path $repoRoot "src\TouchToys\bin\$Configuration\net8.0-windows10.0.22621.0\$runtimeIdentifier"
 $generatedPri = Join-Path $buildOutput 'TouchToys.pri'

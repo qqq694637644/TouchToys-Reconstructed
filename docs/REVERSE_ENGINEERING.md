@@ -39,9 +39,9 @@ The first clean build exposed several decompiler artifacts. These were repaired 
 - A QR scanner method contained an unassigned local used only by decompiler-generated no-op expressions. Those expressions were removed.
 - The generated `RefSafetyRules` assembly attribute was removed so the current compiler can emit its own metadata.
 
-## XAML limitation
+## XAML recovery
 
-The package contains a compiled `App.xbf` resource but no original `.xaml` source files. The application constructs most UI in C#. The build maps the recovered XBF file to the `App.xaml` resource URI and generates a fresh resource index. Reconstructing the original XAML text remains a known source-level gap.
+The package contains a compiled `App.xbf` resource but no original `.xaml` source files. `App.xaml` was recovered by decompiling the XBF 2.1 MUX resource with XbfKit 0.4.0, then checking an XAML -> XBF -> XAML round trip. The editable XAML is compiled back to `App.xbf` by `tools/XbfCompiler` before the app build. The recovered markup preserves the application resource dictionaries and theme resources; original comments and formatting cannot be recovered.
 
 ## Signing and capabilities
 

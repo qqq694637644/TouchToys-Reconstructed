@@ -15,6 +15,7 @@ The current source intentionally stays close to the decompiler output. Manual ch
 - `QrScannerWindow.cs`: remove an unassigned decompiler-generated no-op local.
 - `App.cs`: redirect test artifacts to a dedicated writable directory and make smoke-test failures return a nonzero process exit code.
 - `Properties/AssemblyInfo.cs`: remove compiler-generated safety metadata that the current compiler emits itself and expose internal pure-logic types to the regression test assembly.
+- `App.xaml` / `tools/XbfCompiler`: reconstruct the compiled XBF 2.1 MUX resource into editable XAML and compile it back to XBF as part of the build.
 
 The rest of the editable application source is kept as close as practical to the raw decompilation. This is a source reconstruction, not a claim that the original author's comments, formatting, or XAML source have been recovered.
 
@@ -56,7 +57,7 @@ The test harness now treats an exception as a nonzero process exit code and remo
 
 ## Known limits and manual retests
 
-- The original package contains compiled `App.xbf` but no original `.xaml` source. The XBF resource is preserved and packaged; its original declarative markup is not reconstructed yet.
+- The original package contains compiled `App.xbf` but no original `.xaml` source. The recovered `App.xaml` has been round-trip checked through XbfKit; its comments and original formatting are not recoverable, and the remaining UI is predominantly constructed in C#.
 - A hosted runner can test synthetic touch injection and UI layout, but it cannot prove behavior on every physical touchscreen, DPI configuration, GPU, or multi-monitor setup.
 - The CI manifest intentionally omits `uiAccess`. Signed desktop redirection and elevated-window interaction must be retested with an appropriately trusted production certificate on a real Windows device.
 - Camera capture, real media-provider integration, and system-shell taskbar/Start-menu behavior require device-level validation; the built-in tests explicitly identify several of these as not exercised.

@@ -1,0 +1,13 @@
+{
+  "version": 1,
+  "dependencies": {
+    "net10.0": {
+      "XbfKit": {
+        "type": "Direct",
+        "requested": "[0.4.0, )",
+        "resolved": "0.4.0",
+        "contentHash": "qNcx7ST1k5sbe/gkseff5NgXsiHdV3NtI56DNkbYtURR8KSTk49L2o05TkA30b3Af953Kwa4RVt0a/1r/rqbEA=="
+      }
+    }
+  }
+}

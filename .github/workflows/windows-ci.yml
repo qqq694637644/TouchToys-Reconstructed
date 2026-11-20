@@ -22,10 +22,12 @@ jobs:
       - name: Check out source
         uses: actions/checkout@v4
 
-      - name: Install .NET 8 SDK
+      - name: Install .NET 8 and 10 SDKs
         uses: actions/setup-dotnet@v4
         with:
-          dotnet-version: 8.0.x
+          dotnet-version: |
+            8.0.x
+            10.0.x
 
       - name: Run deterministic gesture and geometry tests
         shell: powershell
@@ -45,10 +47,12 @@ jobs:
       - name: Check out source
         uses: actions/checkout@v4
 
-      - name: Install .NET 8 SDK
+      - name: Install .NET 8 and 10 SDKs
         uses: actions/setup-dotnet@v4
         with:
-          dotnet-version: 8.0.x
+          dotnet-version: |
+            8.0.x
+            10.0.x
 
       - name: Build and package MSIX
         shell: pwsh
