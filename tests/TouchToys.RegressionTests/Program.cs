@@ -86,6 +86,7 @@ internal static class Program
     private static void PreferredIconFontDetection()
     {
         IconFontResolver.Initialize();
+        Console.WriteLine($"FONT_PROBE {IconFontResolver.DiagnosticSummary}");
         int build = Environment.OSVersion.Version.Build;
         string expected = build >= 22000 && IconFontResolver.IsFontInstalled(IconFontResolver.FluentIcons)
             ? IconFontResolver.FluentIcons
