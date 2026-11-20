@@ -31,11 +31,11 @@
     <None Remove="TouchToys.Localization.tsv" />
     <EmbeddedResource Include="TouchToys.Localization.tsv" LogicalName="TouchToys.Localization.tsv" />
     <Page Remove="App.xaml" />
-    <None Include="App.xaml" />
+    <None Remove="App.xaml" />
     <Compile Remove="WinRT.TouchToysGenericHelpers\**\*.cs" />
   </ItemGroup>
   <ItemGroup>
-    <Content Include="App.xbf" Link="App.xaml" TargetPath="App.xaml" CopyToOutputDirectory="PreserveNewest" />
+    <Content Include="App.xaml" CopyToOutputDirectory="PreserveNewest" />
     <Content Include="Assets\**\*" CopyToOutputDirectory="PreserveNewest" />
   </ItemGroup>
   <ItemGroup>

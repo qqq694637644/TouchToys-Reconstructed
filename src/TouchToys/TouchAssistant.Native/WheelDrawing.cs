@@ -4,6 +4,7 @@ using System.Drawing;
 using System.Drawing.Drawing2D;
 using System.Drawing.Imaging;
 using TouchAssistant.Models;
+using TouchAssistant.Services;
 using TouchAssistant.UI;
 using Windows.UI;
 
@@ -11,6 +12,11 @@ namespace TouchAssistant.Native;
 
 internal static class WheelDrawing
 {
+	internal static string ResolveLabel(GestureAction action)
+	{
+		return string.IsNullOrWhiteSpace(action.Label) ? ActionNames.Describe(action) : action.Label;
+	}
+
 	public static void Draw(Graphics g, IReadOnlyList<GestureAction> actions, Bitmap?[] customIcons, int selected, double wheelProgress = 1.0)
 	{
 		for (int i = 0; i < 8; i++)
@@ -24,6 +30,7 @@ internal static class WheelDrawing
 			using SolidBrush brush = new SolidBrush((i == selected) ? System.Drawing.Color.FromArgb((int)(255.0 * wheelProgress), color.R, color.G, color.B) : System.Drawing.Color.FromArgb((int)(245.0 * wheelProgress), 92, 92, 92));
 			g.FillPath(brush, graphicsPath);
 			GestureAction gestureAction = actions[i];
+			string label = ResolveLabel(gestureAction);
 			if ((gestureAction.AppearanceDestination & 1) == 0)
 			{
 				continue;
@@ -33,7 +40,7 @@ internal static class WheelDrawing
 			double num2 = (double)(-90 + i * 45) * Math.PI / 180.0;
 			float num3 = (float)(79.0 * Math.Cos(num2));
 			float num4 = (float)(79.0 * Math.Sin(num2));
-			float num5 = num4 - (float)((gestureAction.Label.Length > 0) ? 6 : 0);
+			float num5 = num4 - (float)((label.Length > 0) ? 6 : 0);
 			using SolidBrush brush2 = new SolidBrush(System.Drawing.Color.FromArgb((int)(255.0 * wheelProgress), System.Drawing.Color.White));
 			using StringFormat stringFormat = new StringFormat
 			{
@@ -59,7 +66,7 @@ internal static class WheelDrawing
 				graphicsPath2.AddString(icon, family, 0, 23f, new PointF(num3, num5), stringFormat);
 				g.FillPath(brush2, graphicsPath2);
 			}
-			if (gestureAction.Label.Length <= 0)
+			if (label.Length <= 0)
 			{
 				continue;
 			}
@@ -68,7 +75,7 @@ internal static class WheelDrawing
 			stringFormat.Trimming = StringTrimming.EllipsisCharacter;
 			stringFormat.FormatFlags = StringFormatFlags.NoWrap;
 			using SolidBrush brush3 = new SolidBrush(System.Drawing.Color.FromArgb((int)(255.0 * wheelProgress * gestureAction.TextOpacity), ColorTranslator.FromHtml(gestureAction.TextColor)));
-			graphicsPath3.AddString(gestureAction.Label, family2, 0, 10f, new RectangleF(num3 - 25f, flag ? (num4 + 6f) : (num4 - 7f), 50f, 15f), stringFormat);
+			graphicsPath3.AddString(label, family2, 0, 10f, new RectangleF(num3 - 25f, flag ? (num4 + 6f) : (num4 - 7f), 50f, 15f), stringFormat);
 			g.FillPath(brush3, graphicsPath3);
 		}
 	}

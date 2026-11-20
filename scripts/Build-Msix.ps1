@@ -14,9 +14,6 @@ $ErrorActionPreference = 'Stop'
 
 $repoRoot = Split-Path -Parent $PSScriptRoot
 $project = Join-Path $repoRoot 'src\TouchToys\TouchToys.csproj'
-$xbfCompiler = Join-Path $repoRoot 'tools\XbfCompiler\XbfCompiler.csproj'
-$xamlSource = Join-Path $repoRoot 'src\TouchToys\App.xaml'
-$xbfOutput = Join-Path $repoRoot 'src\TouchToys\App.xbf'
 $manifestName = if ($CiManifest) { 'AppxManifest.CI.xml' } else { 'AppxManifest.xml' }
 $manifestSource = Join-Path $repoRoot "src\TouchToys\Package\$manifestName"
 $applicationManifest = Join-Path $repoRoot 'src\TouchToys\app.manifest'
@@ -45,15 +42,10 @@ if (-not (Test-Path -LiteralPath $project)) {
 if (-not (Test-Path -LiteralPath $manifestSource)) {
     throw "Package manifest not found: $manifestSource"
 }
-if (-not (Test-Path -LiteralPath $xbfCompiler) -or -not (Test-Path -LiteralPath $xamlSource)) {
-    throw 'The XBF compiler project or App.xaml source is missing.'
-}
-
 Remove-Item -LiteralPath $publishDirectory, $layoutDirectory -Recurse -Force -ErrorAction SilentlyContinue
 New-Item -ItemType Directory -Force -Path $publishDirectory, $layoutDirectory | Out-Null
 
-Write-Host 'Compiling editable App.xaml to WinUI XBF 2.1 (MUX)...'
-Invoke-RepoDotnet -Arguments @('run', '--project', $xbfCompiler, '--configuration', 'Release', '--', $xamlSource, $xbfOutput)
+Write-Host 'Publishing the original App.xaml text resource (no XBF substitution)...'
 
 Write-Host "Publishing $runtimeIdentifier ($Configuration)..."
 $publishArguments = @(

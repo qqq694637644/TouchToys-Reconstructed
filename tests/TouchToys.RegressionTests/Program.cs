@@ -1,5 +1,7 @@
 using TouchAssistant.Core;
 using TouchAssistant.Models;
+using TouchAssistant.Native;
+using TouchAssistant.Services;
 
 internal static class Program
 {
@@ -28,6 +30,7 @@ internal static class Program
         Run("geometry.bottom-edge-thresholds", BottomEdgeThresholds);
         Run("geometry.reveal-and-dial-index", RevealAndDialIndex);
         Run("relay.idle-reset-guard", RelayIdleResetGuard);
+        Run("wheel.default-action-labels", WheelDefaultActionLabels);
 
         Console.WriteLine($"RESULT: {passed} passed, {failed} failed");
         Environment.ExitCode = failed == 0 ? 0 : 1;
@@ -52,6 +55,26 @@ internal static class Program
     {
         if (!condition)
             throw new InvalidOperationException(message);
+    }
+
+    private static void WheelDefaultActionLabels()
+    {
+        Localization.Use("zh-CN");
+        List<GestureAction> actions = Settings.Defaults();
+        string[] expected =
+        {
+            "任务视图", "控制中心", "下个应用", "应用设置",
+            "显示桌面", "切换方舟", "上个应用", "虚拟 Dial"
+        };
+
+        for (int i = 0; i < expected.Length; i++)
+            Equal(expected[i], WheelDrawing.ResolveLabel(actions[i]), $"default wheel label {i}");
+
+        GestureAction custom = GestureAction.BuiltIn("TaskView") { Label = "自定义任务" };
+        Equal("自定义任务", WheelDrawing.ResolveLabel(custom), "custom label takes precedence");
+
+        custom.Label = "  ";
+        Equal("任务视图", WheelDrawing.ResolveLabel(custom), "whitespace label uses fallback");
     }
 
     private static void Equal<T>(T expected, T actual, string message)
