@@ -16,6 +16,7 @@ $repoRoot = Split-Path -Parent $PSScriptRoot
 $project = Join-Path $repoRoot 'src\TouchToys\TouchToys.csproj'
 $manifestName = if ($CiManifest) { 'AppxManifest.CI.xml' } else { 'AppxManifest.xml' }
 $manifestSource = Join-Path $repoRoot "src\TouchToys\Package\$manifestName"
+$applicationManifest = Join-Path $repoRoot 'src\TouchToys\app.manifest'
 $artifactRoot = Join-Path $repoRoot 'artifacts'
 $publishDirectory = Join-Path $artifactRoot "publish\$Architecture"
 $layoutDirectory = Join-Path $artifactRoot "package-layout\$Architecture"
@@ -32,7 +33,22 @@ Remove-Item -LiteralPath $publishDirectory, $layoutDirectory -Recurse -Force -Er
 New-Item -ItemType Directory -Force -Path $publishDirectory, $layoutDirectory | Out-Null
 
 Write-Host "Publishing $runtimeIdentifier ($Configuration)..."
-dotnet publish $project --configuration $Configuration --runtime $runtimeIdentifier --self-contained true --output $publishDirectory
+$publishArguments = @(
+    'publish',
+    $project,
+    '--configuration', $Configuration,
+    '--runtime', $runtimeIdentifier,
+    '--self-contained', 'true',
+    '--output', $publishDirectory
+)
+if ($CiManifest) {
+    $ciApplicationManifest = Join-Path $artifactRoot 'app.ci.manifest'
+    $manifestText = Get-Content -LiteralPath $applicationManifest -Raw
+    $manifestText = [regex]::Replace($manifestText, 'uiAccess\s*=\s*["'']true["'']', 'uiAccess="false"', [System.Text.RegularExpressions.RegexOptions]::IgnoreCase)
+    [System.IO.File]::WriteAllText($ciApplicationManifest, $manifestText, [System.Text.UTF8Encoding]::new($false))
+    $publishArguments += "-p:ApplicationManifest=$ciApplicationManifest"
+}
+& dotnet @publishArguments
 if ($LASTEXITCODE -ne 0) {
     throw "dotnet publish failed with exit code $LASTEXITCODE"
 }
