@@ -274,6 +274,10 @@ public class App : Application, IXamlMetadataProvider
 		{
 			Log(e.Exception);
 		};
+	}
+
+	protected override void OnLaunched(LaunchActivatedEventArgs args)
+	{
 		try
 		{
 			InitializeComponent();
@@ -283,10 +287,6 @@ public class App : Application, IXamlMetadataProvider
 			Diagnostics.Error(error, "Application.Initialize");
 			throw;
 		}
-	}
-
-	protected override void OnLaunched(LaunchActivatedEventArgs args)
-	{
 		Diagnostics.Event("Application", "OnLaunched");
 		if (Array.Exists(Environment.GetCommandLineArgs(), (string x) => x == "--diagnose" || x == "--restore"))
 		{
