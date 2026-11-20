@@ -47,8 +47,8 @@ The package contains a compiled `App.xbf` resource but no original `.xaml` sourc
 
 The production package manifest retains `runFullTrust` and `uiAccess`. A production MSIX must be signed with an appropriate trusted publisher certificate. No original certificate or private key is redistributed.
 
-CI uses a separate manifest without `uiAccess` and an ephemeral self-signed certificate. That allows package installation and UI/touch smoke tests on a GitHub-hosted Windows runner, but does not validate elevated-window redirection that depends on UIAccess trust.
+CI uses a separate manifest without `uiAccess` and deliberately leaves the MSIX unsigned. Local Windows 10 development testing uses Developer Mode and loose-file registration; Windows 11 supports an unsigned-package installation path. Neither route validates elevated-window redirection that depends on UIAccess trust.
 
 ## Validation
 
-The internal `--smoke-test` path writes `smoke-test.json`; `--touch-smoke` also writes `touch-smoke.txt`. The test suite captures UI screenshots into `TOUCHTOYS_TEST_OUTPUT_DIR`. GitHub Actions uploads these files with the architecture-specific MSIX package.
+The internal `--smoke-test` path writes `smoke-test.json`; `--touch-smoke` also writes `touch-smoke.txt`. The test suite captures UI screenshots into `TOUCHTOYS_TEST_OUTPUT_DIR`. GitHub Actions uploads the architecture-specific unsigned MSIX packages; device-side test runs retain their reports and screenshots separately.

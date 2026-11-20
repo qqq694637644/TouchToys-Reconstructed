@@ -5633,8 +5633,29 @@ public class App : Application, IXamlMetadataProvider
 		if (!_contentLoaded)
 		{
 			_contentLoaded = true;
-			Uri resourceLocator = new Uri("ms-appx:///App.xaml");
-			Application.LoadComponent(this, resourceLocator);
+			Resources.MergedDictionaries.Add(new XamlControlsResources());
+			object background;
+			object borderBrush;
+			try
+			{
+				background = Resources["CardBackgroundFillColorDefaultBrush"];
+			}
+			catch (Exception)
+			{
+				background = new SolidColorBrush(Color.FromArgb(byte.MaxValue, 245, 245, 245));
+			}
+			try
+			{
+				borderBrush = Resources["CardStrokeColorDefaultBrush"];
+			}
+			catch (Exception)
+			{
+				borderBrush = new SolidColorBrush(Color.FromArgb(byte.MaxValue, 220, 220, 220));
+			}
+			Style settingsCardStyle = new Style(typeof(Border));
+			settingsCardStyle.Setters.Add(new Setter(Border.BackgroundProperty, background));
+			settingsCardStyle.Setters.Add(new Setter(Border.BorderBrushProperty, borderBrush));
+			Resources["SettingsCardStyle"] = settingsCardStyle;
 		}
 	}
 

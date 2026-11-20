@@ -58,35 +58,26 @@ jobs:
         shell: pwsh
         run: .\scripts\Build-Msix.ps1 -Architecture '${{ matrix.arch }}' -Configuration Release -CiManifest
 
-      - name: Sign x64 MSIX for Surface Pro 7 deployment
-        if: matrix.arch == 'x64'
+      - name: Verify unsigned MSIX package
         shell: powershell
         run: |
           $ErrorActionPreference = 'Stop'
-          $msix = Join-Path $env:GITHUB_WORKSPACE 'artifacts\TouchToys-Reconstructed-x64.msix'
-          $cert = New-SelfSignedCertificate -Type CodeSigningCert -Subject 'CN=TouchToys-Reconstructed' -CertStoreLocation 'Cert:\CurrentUser\My' -KeyExportPolicy Exportable -KeyLength 2048 -HashAlgorithm SHA256
-          $passwordText = [Guid]::NewGuid().ToString('N')
-          $password = ConvertTo-SecureString $passwordText -AsPlainText -Force
-          $pfx = Join-Path $env:RUNNER_TEMP 'TouchToys-CI.pfx'
-          $cer = Join-Path $env:GITHUB_WORKSPACE 'artifacts\TouchToys-Reconstructed-CI.cer'
-          Export-PfxCertificate -Cert $cert -FilePath $pfx -Password $password | Out-Null
-          Export-Certificate -Cert $cert -FilePath $cer | Out-Null
-          $kits = Join-Path ([Environment]::GetEnvironmentVariable('ProgramFiles(x86)')) 'Windows Kits\10\bin'
-          $signtool = Get-ChildItem -LiteralPath $kits -Recurse -File -Filter 'signtool.exe' | Where-Object { $_.FullName -match '\\x64\\signtool\.exe$' } | Sort-Object FullName -Descending | Select-Object -First 1
-          if ($null -eq $signtool) { throw 'SignTool.exe was not found.' }
-          & $signtool.FullName sign /fd SHA256 /f $pfx /p $passwordText $msix
-          if ($LASTEXITCODE -ne 0) { throw "SignTool failed: $LASTEXITCODE" }
-          Remove-Item -LiteralPath $pfx -Force
-          Remove-Item -LiteralPath ("Cert:\CurrentUser\My\" + $cert.Thumbprint) -Force
-          Write-Host ('SIGNED_MSIX_SHA256=' + (Get-FileHash $msix -Algorithm SHA256).Hash)
+          $msix = Join-Path $env:GITHUB_WORKSPACE 'artifacts\TouchToys-Reconstructed-${{ matrix.arch }}.msix'
+          if (-not (Test-Path -LiteralPath $msix)) { throw "MSIX package not found: $msix" }
+          Add-Type -AssemblyName System.IO.Compression.FileSystem
+          $archive = [System.IO.Compression.ZipFile]::OpenRead($msix)
+          try {
+            if ($null -ne $archive.GetEntry('AppxSignature.p7x')) { throw 'MSIX unexpectedly contains a signature.' }
+            if ($null -eq $archive.GetEntry('AppxManifest.xml')) { throw 'MSIX manifest is missing.' }
+          } finally { $archive.Dispose() }
+          Write-Host ('UNSIGNED_MSIX_SHA256=' + (Get-FileHash -LiteralPath $msix -Algorithm SHA256).Hash)
 
-      - name: Upload MSIX and screenshot artifacts
+      - name: Upload unsigned MSIX artifacts
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: TouchToys-${{ matrix.arch }}-artifacts
+          name: TouchToys-${{ matrix.arch }}-unsigned-artifacts
           path: |
             artifacts/TouchToys-Reconstructed-${{ matrix.arch }}.msix
-            artifacts/TouchToys-Reconstructed-CI.cer
-          if-no-files-found: warn
+          if-no-files-found: error
           retention-days: 30

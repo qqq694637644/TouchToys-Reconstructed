@@ -46,7 +46,7 @@ The script writes packages under `artifacts/`. The production manifest in `src/T
 
 ## CI
 
-GitHub Actions first runs the deterministic gesture/geometry regression suite, then builds both architectures. The x64 job signs a CI-only MSIX with an ephemeral certificate, installs it on the Windows runner, runs the built-in UI/touch smoke suite, and uploads its JSON report and PNG screenshots as workflow artifacts. The CI manifest omits the restricted `uiAccess` capability so a temporary test certificate can be used safely.
+GitHub Actions first runs the deterministic gesture/geometry regression suite, then builds both architectures and uploads intentionally unsigned MSIX artifacts. CI does not create, store, or distribute a signing certificate. For local Windows 10 testing, enable Developer Mode and register the extracted package layout with `Add-AppxPackage -Register`; Windows 11 also supports installing unsigned packages with `Add-AppxPackage -AllowUnsigned` (administrator rights are normally required for executable packages). The CI manifest omits the restricted `uiAccess` capability, so signed desktop redirection and elevated-window interaction still require a separate trusted-certificate device retest.
 
 ## Reconstruction notes
 
