@@ -1,4 +1,4 @@
-name: Windows build, smoke tests and screenshots
+name: Windows build and regression tests (unsigned packages)
 
 concurrency:
   group: toucht-toys-${{ github.ref }}

@@ -5642,7 +5642,7 @@ public class App : Application, IXamlMetadataProvider
 			}
 			catch (Exception)
 			{
-				background = new SolidColorBrush(Color.FromArgb(byte.MaxValue, 245, 245, 245));
+				background = new SolidColorBrush(Windows.UI.Color.FromArgb(byte.MaxValue, 245, 245, 245));
 			}
 			try
 			{
@@ -5650,11 +5650,11 @@ public class App : Application, IXamlMetadataProvider
 			}
 			catch (Exception)
 			{
-				borderBrush = new SolidColorBrush(Color.FromArgb(byte.MaxValue, 220, 220, 220));
+				borderBrush = new SolidColorBrush(Windows.UI.Color.FromArgb(byte.MaxValue, 220, 220, 220));
 			}
 			Style settingsCardStyle = new Style(typeof(Border));
-			settingsCardStyle.Setters.Add(new Setter(Border.BackgroundProperty, background));
-			settingsCardStyle.Setters.Add(new Setter(Border.BorderBrushProperty, borderBrush));
+			settingsCardStyle.Setters.Add(new Microsoft.UI.Xaml.Setter(Border.BackgroundProperty, background));
+			settingsCardStyle.Setters.Add(new Microsoft.UI.Xaml.Setter(Border.BorderBrushProperty, borderBrush));
 			Resources["SettingsCardStyle"] = settingsCardStyle;
 		}
 	}
