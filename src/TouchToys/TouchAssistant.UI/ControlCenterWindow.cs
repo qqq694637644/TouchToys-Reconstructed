@@ -409,7 +409,7 @@ internal sealed class ControlCenterWindow : Window
 		themeSettings.ColorValuesChanged += ThemeChanged;
 		SystemEvents.UserPreferenceChanged += PreferenceChanged;
 		time.HorizontalAlignment = (date.HorizontalAlignment = HorizontalAlignment.Center);
-		time.FontFamily = new Microsoft.UI.Xaml.Media.FontFamily("Segoe UI Variable Display");
+		time.FontFamily = new Microsoft.UI.Xaml.Media.FontFamily(IconFontResolver.ResolveTextFontFamily("Segoe UI Variable Display", "Segoe UI", "Arial"));
 		time.FontWeight = FontWeights.Bold;
 		time.TextAlignment = TextAlignment.Center;
 		stackPanel.Children.Add(time);
@@ -908,7 +908,7 @@ internal sealed class ControlCenterWindow : Window
 		apps.CanReorderItems = false;
 		apps.AllowDrop = true;
 		apps.ItemsPanel = (ItemsPanelTemplate)XamlReader.Load("<ItemsPanelTemplate xmlns='http://schemas.microsoft.com/winfx/2006/xaml/presentation'><ItemsWrapGrid Orientation='Horizontal' MaximumRowsOrColumns='5'/></ItemsPanelTemplate>");
-		apps.ItemTemplate = (DataTemplate)XamlReader.Load("<DataTemplate xmlns='http://schemas.microsoft.com/winfx/2006/xaml/presentation' xmlns:x='http://schemas.microsoft.com/winfx/2006/xaml'><Grid Width='68' Height='68' Background='Transparent' CornerRadius='13'><StackPanel VerticalAlignment='Center' Spacing='5'><Grid Height='30'><FontIcon Visibility='{Binding FallbackVisibility}' FontFamily='Segoe Fluent Icons' Glyph='{Binding FallbackGlyph}' FontSize='26'/><Image Source='{Binding Icon}' Width='30' Height='30'/></Grid><TextBlock Text='{Binding Name}' FontSize='10' TextAlignment='Center' TextTrimming='CharacterEllipsis' Margin='4,0'/></StackPanel><Border BorderBrush='{StaticResource AppAccentBrush}' BorderThickness='2' CornerRadius='13' IsHitTestVisible='False' Visibility='{Binding SelectionVisibility}'/><Button x:Name='DeleteLauncher' Visibility='{Binding DeleteVisibility}' HorizontalAlignment='Right' VerticalAlignment='Top' Width='32' Height='32' MinWidth='32' MinHeight='32' Padding='0' CornerRadius='16' Background='#E04848' Foreground='White' BorderThickness='0' AutomationProperties.Name='删除应用'><FontIcon FontFamily='Segoe Fluent Icons' Glyph='&#xE711;' FontSize='12'/></Button></Grid></DataTemplate>");
+		apps.ItemTemplate = (DataTemplate)XamlReader.Load("<DataTemplate xmlns='http://schemas.microsoft.com/winfx/2006/xaml/presentation' xmlns:x='http://schemas.microsoft.com/winfx/2006/xaml'><Grid Width='68' Height='68' Background='Transparent' CornerRadius='13'><StackPanel VerticalAlignment='Center' Spacing='5'><Grid Height='30'><FontIcon Visibility='{Binding FallbackVisibility}' FontFamily='{Binding FallbackFontFamily}' Glyph='{Binding FallbackGlyph}' FontSize='26'/><Image Source='{Binding Icon}' Width='30' Height='30'/></Grid><TextBlock Text='{Binding Name}' FontSize='10' TextAlignment='Center' TextTrimming='CharacterEllipsis' Margin='4,0'/></StackPanel><Border BorderBrush='{StaticResource AppAccentBrush}' BorderThickness='2' CornerRadius='13' IsHitTestVisible='False' Visibility='{Binding SelectionVisibility}'/><Button x:Name='DeleteLauncher' Visibility='{Binding DeleteVisibility}' HorizontalAlignment='Right' VerticalAlignment='Top' Width='32' Height='32' MinWidth='32' MinHeight='32' Padding='0' CornerRadius='16' Background='#E04848' Foreground='White' BorderThickness='0' AutomationProperties.Name='删除应用'><FontIcon FontFamily='{Binding DeleteFontFamily}' Glyph='&#xE711;' FontSize='12'/></Button></Grid></DataTemplate>");
 		apps.ContainerContentChanging += delegate(ListViewBase sender, ContainerContentChangingEventArgs e)
 		{
 			if (!e.InRecycleQueue && e.Phase == 0)
@@ -1133,11 +1133,11 @@ internal sealed class ControlCenterWindow : Window
 					volumeDelay.Start();
 				}
 			}
-			volumeIcon.Glyph = ((e.NewValue == 0.0) ? "\ue74f" : ((e.NewValue < 50.0) ? "\ue993" : "\ue767"));
+			Ui.SetIconGlyph(volumeIcon, (e.NewValue == 0.0) ? "\ue74f" : ((e.NewValue < 50.0) ? "\ue993" : "\ue767"));
 		};
 		brightness.ValueChanged += delegate(object _, RangeBaseValueChangedEventArgs e)
 		{
-			brightnessIcon.Glyph = ((e.NewValue < 34.0) ? "\uec8a" : ((e.NewValue < 67.0) ? "\ue793" : "\ue706"));
+			Ui.SetIconGlyph(brightnessIcon, (e.NewValue < 34.0) ? "\uec8a" : ((e.NewValue < 67.0) ? "\ue793" : "\ue706"));
 			brightnessIcon.FontSize = ((e.NewValue < 34.0) ? 16 : ((e.NewValue < 67.0) ? 19 : 22));
 			if (!syncing)
 			{
@@ -1721,7 +1721,7 @@ internal sealed class ControlCenterWindow : Window
 			iconFont = new ComboBox
 			{
 				Header = Localization.T("系统图标字体"),
-				ItemsSource = new string[3] { "Segoe Fluent Icons", "Segoe MDL2 Assets", "Segoe UI Symbol" },
+				ItemsSource = IconFontResolver.GetAvailableIconFontFamilies(),
 				SelectedIndex = 0,
 				MinWidth = 200.0
 			};
@@ -1830,7 +1830,7 @@ internal sealed class ControlCenterWindow : Window
 				Height = 180.0,
 				SelectionMode = ListViewSelectionMode.Single
 			};
-			appList.ItemTemplate = (DataTemplate)XamlReader.Load("<DataTemplate xmlns='http://schemas.microsoft.com/winfx/2006/xaml/presentation'><Grid Height='44' ColumnSpacing='10'><Grid.ColumnDefinitions><ColumnDefinition Width='34'/><ColumnDefinition Width='*'/></Grid.ColumnDefinitions><Grid><FontIcon Glyph='{Binding FallbackGlyph}' FontFamily='Segoe Fluent Icons' FontSize='22'/><Image Source='{Binding Icon}' Width='28' Height='28'/></Grid><TextBlock Grid.Column='1' Text='{Binding Name}' VerticalAlignment='Center' TextTrimming='CharacterEllipsis'/></Grid></DataTemplate>");
+			appList.ItemTemplate = (DataTemplate)XamlReader.Load("<DataTemplate xmlns='http://schemas.microsoft.com/winfx/2006/xaml/presentation'><Grid Height='44' ColumnSpacing='10'><Grid.ColumnDefinitions><ColumnDefinition Width='34'/><ColumnDefinition Width='*'/></Grid.ColumnDefinitions><Grid><FontIcon Glyph='{Binding FallbackGlyph}' FontFamily='{Binding FallbackFontFamily}' FontSize='22'/><Image Source='{Binding Icon}' Width='28' Height='28'/></Grid><TextBlock Grid.Column='1' Text='{Binding Name}' VerticalAlignment='Center' TextTrimming='CharacterEllipsis'/></Grid></DataTemplate>");
 			appList.ContainerContentChanging += delegate(ListViewBase sender, ContainerContentChangingEventArgs e)
 			{
 				if (!e.InRecycleQueue && e.Item is LauncherItem launcherItem2)
@@ -1988,6 +1988,7 @@ internal sealed class ControlCenterWindow : Window
 					Name = ((!string.IsNullOrWhiteSpace(name.Text)) ? name.Text.Trim() : (flag ? KeyCatalog.Format(keys) : Path.GetFileNameWithoutExtension(target.Text))),
 					Target = (flag ? "" : target.Text.Trim()),
 					IconGlyph = icon.Text.Trim(),
+					IconFont = IconFontResolver.NormalizeIconFont(iconFont.SelectedItem as string, icon.Text.Trim()),
 					Keys = (flag ? new List<int>(keys) : new List<int>())
 				};
 				if (flag ? (launcherEntry.Keys.Count == 0) : string.IsNullOrWhiteSpace(launcherEntry.Target))
@@ -2021,14 +2022,14 @@ internal sealed class ControlCenterWindow : Window
 		void FillIcons()
 		{
 			iconWrap.Children.Clear();
-			string familyName = (iconFont.SelectedItem as string) ?? "Segoe Fluent Icons";
+			string familyName = (iconFont.SelectedItem as string) ?? IconFontResolver.PreferredFontFamilyName;
 			for (int i = 0; i < 256; i++)
 			{
 				int value = 57344 + Math.Max(0, iconRange.SelectedIndex) * 256 + i;
 				FontIcon content = new FontIcon
 				{
 					Glyph = char.ConvertFromUtf32(value),
-					FontFamily = new Microsoft.UI.Xaml.Media.FontFamily(familyName),
+					FontFamily = IconFontResolver.CreateXamlFontFamily(char.ConvertFromUtf32(value), familyName),
 					FontSize = 22.0,
 					Width = 36.0,
 					Height = 36.0,
@@ -2078,7 +2079,7 @@ internal sealed class ControlCenterWindow : Window
 		{
 			if (!disposed && shown && !mediaBusy)
 			{
-				((FontIcon)play.Content).Glyph = (system.IsPlaying ? "\ue769" : "\ue768");
+				Ui.SetIconGlyph((FontIcon)play.Content, system.IsPlaying ? "\ue769" : "\ue768");
 			}
 		});
 	}
@@ -2094,13 +2095,13 @@ internal sealed class ControlCenterWindow : Window
 		string previous = ((FontIcon)play.Content).Glyph;
 		if (operation == "Toggle")
 		{
-			((FontIcon)play.Content).Glyph = ((previous == "\ue768") ? "\ue769" : "\ue768");
+			Ui.SetIconGlyph((FontIcon)play.Content, (previous == "\ue768") ? "\ue769" : "\ue768");
 		}
 		try
 		{
 			if (!(await system.MediaAsync(operation)))
 			{
-				((FontIcon)play.Content).Glyph = previous;
+				Ui.SetIconGlyph((FontIcon)play.Content, previous);
 			}
 		}
 		finally
@@ -2531,7 +2532,7 @@ internal sealed class ControlCenterWindow : Window
 			mediaTitle.Text = system.MediaTitle;
 			if (!mediaBusy && (DateTime.UtcNow - lastMediaInput).TotalSeconds > 1.0)
 			{
-				((FontIcon)play.Content).Glyph = (system.IsPlaying ? "\ue769" : "\ue768");
+				Ui.SetIconGlyph((FontIcon)play.Content, system.IsPlaying ? "\ue769" : "\ue768");
 			}
 			State(wifi, system.HasWifi && system.Wifi);
 			State(bluetooth, system.HasBluetooth && system.Bluetooth);

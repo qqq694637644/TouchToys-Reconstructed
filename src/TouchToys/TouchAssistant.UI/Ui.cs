@@ -119,9 +119,15 @@ internal static class Ui
 		return new FontIcon
 		{
 			Glyph = glyph,
-			FontFamily = new Microsoft.UI.Xaml.Media.FontFamily("Segoe Fluent Icons"),
+			FontFamily = IconFontResolver.CreateXamlFontFamily(glyph),
 			FontSize = size
 		};
+	}
+
+	public static void SetIconGlyph(FontIcon icon, string glyph, string? preferredFamily = null)
+	{
+		icon.Glyph = glyph;
+		icon.FontFamily = IconFontResolver.CreateXamlFontFamily(glyph, preferredFamily);
 	}
 
 	public static Microsoft.UI.Xaml.Controls.Button Button(string text, Action action)

@@ -288,6 +288,8 @@ public class App : Application, IXamlMetadataProvider
 	protected override void OnLaunched(LaunchActivatedEventArgs args)
 	{
 		Diagnostics.Event("Application", "OnLaunched");
+		IconFontResolver.Initialize();
+		Diagnostics.Event("Fonts", IconFontResolver.DiagnosticSummary);
 		if (Array.Exists(Environment.GetCommandLineArgs(), (string x) => x == "--diagnose" || x == "--restore"))
 		{
 			NativeDiagnosticCommand();

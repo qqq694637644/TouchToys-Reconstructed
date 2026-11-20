@@ -479,10 +479,7 @@ internal sealed class SettingsWindow : Window
 			navigation.MenuItems.Add(new NavigationViewItem
 			{
 				Content = Localization.T(array[num4]),
-				Icon = new FontIcon
-				{
-					Glyph = array2[num4]
-				},
+				Icon = Ui.Icon(array2[num4]),
 				Tag = num4
 			});
 		}
@@ -4327,7 +4324,7 @@ internal sealed class SettingsWindow : Window
 					{
 						action.Icon = icons[picker.SelectedIndex].Glyph;
 						action.IconPath = "";
-						action.IconFont = "Segoe Fluent Icons";
+						action.IconFont = IconFontResolver.PreferredFontFamilyName;
 						store.Save();
 					}
 				};

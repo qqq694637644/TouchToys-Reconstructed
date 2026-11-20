@@ -55,6 +55,7 @@ internal static class InstalledApps
 			Target = app.Target,
 			MatchTarget = app.MatchTarget,
 			IconGlyph = app.IconGlyph,
+			IconFont = app.IconFont,
 			IconPath = app.IconPath,
 			Keys = new List<int>(app.Keys)
 		}).ToList();

@@ -26,14 +26,14 @@ internal static class SectorIconPicker
 		FontIcon preview = new FontIcon
 		{
 			Glyph = action.Icon,
-			FontFamily = new Microsoft.UI.Xaml.Media.FontFamily(action.IconFont),
+			FontFamily = IconFontResolver.CreateXamlFontFamily(action.Icon, action.IconFont),
 			FontSize = 32.0
 		};
 		ComboBox font = new ComboBox
 		{
 			Header = Localization.T("系统图标字体"),
-			ItemsSource = new string[3] { "Segoe Fluent Icons", "Segoe MDL2 Assets", "Segoe UI Symbol" },
-			SelectedItem = action.IconFont,
+			ItemsSource = IconFontResolver.GetAvailableIconFontFamilies(action.IconFont),
+			SelectedItem = IconFontResolver.ResolveFontFamily(action.Icon, action.IconFont),
 			HorizontalAlignment = HorizontalAlignment.Stretch
 		};
 		TextBox code = new TextBox
@@ -126,7 +126,7 @@ internal static class SectorIconPicker
 		}
 		void Populate()
 		{
-			string familyName = (font.SelectedItem as string) ?? "Segoe Fluent Icons";
+			string familyName = (font.SelectedItem as string) ?? IconFontResolver.PreferredFontFamilyName;
 			grid.Items.Clear();
 			for (int i = 0; i < 256; i++)
 			{
@@ -134,7 +134,7 @@ internal static class SectorIconPicker
 				FontIcon fontIcon = new FontIcon
 				{
 					Glyph = char.ConvertFromUtf32(num),
-					FontFamily = new Microsoft.UI.Xaml.Media.FontFamily(familyName),
+					FontFamily = IconFontResolver.CreateXamlFontFamily(char.ConvertFromUtf32(num), familyName),
 					FontSize = 24.0,
 					Width = 40.0,
 					Height = 40.0,
@@ -163,9 +163,9 @@ internal static class SectorIconPicker
 			{
 				action.Icon = ((char)result).ToString();
 				action.IconPath = "";
-				action.IconFont = (font.SelectedItem as string) ?? "Segoe Fluent Icons";
+				action.IconFont = IconFontResolver.NormalizeIconFont(font.SelectedItem as string, action.Icon);
 				preview.Glyph = action.Icon;
-				preview.FontFamily = new Microsoft.UI.Xaml.Media.FontFamily(action.IconFont);
+				preview.FontFamily = IconFontResolver.CreateXamlFontFamily(action.Icon, action.IconFont);
 				error.Text = Localization.T("已保存 · 空白方框表示此字体不包含该字符。");
 				store.Save();
 			}

@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using TouchAssistant.Services;
 
 namespace TouchAssistant.Models;
 
@@ -13,6 +14,8 @@ public sealed class LauncherEntry
 	public List<int> Keys { get; set; } = new List<int>();
 
 	public string IconGlyph { get; set; } = "";
+
+	public string IconFont { get; set; } = IconFontResolver.PreferredFontFamilyName;
 
 	public string IconPath { get; set; } = "";
 }

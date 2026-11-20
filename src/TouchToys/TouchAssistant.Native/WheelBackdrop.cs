@@ -156,8 +156,8 @@ internal sealed class WheelBackdrop : IDisposable
 					graphics.ScaleTransform((float)scale, (float)scale);
 					float width = (float)((double)bounds.Width / scale);
 					float num = (float)((double)bounds.Height / scale * 0.1);
-					using Font font = new Font("Segoe UI", 54f, GraphicsUnit.Pixel);
-					using Font font2 = new Font("Microsoft YaHei UI", 18f, GraphicsUnit.Pixel);
+					using Font font = TouchAssistant.Services.IconFontResolver.CreateTextFont("Segoe UI Variable Display", 54f, GraphicsUnit.Pixel, "Segoe UI", "Arial");
+					using Font font2 = TouchAssistant.Services.IconFontResolver.CreateTextFont("Microsoft YaHei UI", 18f, GraphicsUnit.Pixel, "Microsoft YaHei", "DengXian", "Segoe UI");
 					using StringFormat format = new StringFormat
 					{
 						Alignment = StringAlignment.Center

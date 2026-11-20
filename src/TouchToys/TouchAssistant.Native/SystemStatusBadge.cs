@@ -331,7 +331,7 @@ internal sealed class SystemStatusBadge : Window, IDisposable
 			(base.SystemBackdrop as PanelBackdrop)?.Refresh();
 			wifiBase.Foreground = new SolidColorBrush(color);
 			wifiBase.Opacity = (flag3 ? 0.5 : 0.0);
-			wifiIcon.Glyph = ((!flag3) ? "\ue701" : (num4 switch
+			Ui.SetIconGlyph(wifiIcon, (!flag3) ? "\ue701" : (num4 switch
 			{
 				2 => "\ue874", 
 				1 => "\ue873", 
@@ -341,7 +341,7 @@ internal sealed class SystemStatusBadge : Window, IDisposable
 			wifiIcon.Opacity = 1.0;
 			batteryIcon.Foreground = new SolidColorBrush(color);
 			percentText.Foreground = new SolidColorBrush(color);
-			batteryIcon.Glyph = (flag ? BatteryGlyph(num, flag2, PowerManager.EnergySaverStatus == EnergySaverStatus.On) : "\ue83f");
+			Ui.SetIconGlyph(batteryIcon, flag ? BatteryGlyph(num, flag2, PowerManager.EnergySaverStatus == EnergySaverStatus.On) : "\ue83f");
 			percentText.Text = (flag ? (num + "%") : "--");
 		}
 	}

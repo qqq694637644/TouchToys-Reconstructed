@@ -61,7 +61,7 @@ internal static class WheelDrawing
 			}
 			else if (icon.Length > 0)
 			{
-				using FontFamily family = new FontFamily(gestureAction.IconFont);
+				using FontFamily family = IconFontResolver.CreateGdiFontFamily(icon, gestureAction.IconFont);
 				using GraphicsPath graphicsPath2 = new GraphicsPath();
 				graphicsPath2.AddString(icon, family, 0, 23f, new PointF(num3, num5), stringFormat);
 				g.FillPath(brush2, graphicsPath2);
@@ -70,7 +70,7 @@ internal static class WheelDrawing
 			{
 				continue;
 			}
-			using FontFamily family2 = new FontFamily("Segoe UI");
+			using FontFamily family2 = new FontFamily(IconFontResolver.ResolveTextFontFamily("Segoe UI", "Arial"));
 			using GraphicsPath graphicsPath3 = new GraphicsPath();
 			stringFormat.Trimming = StringTrimming.EllipsisCharacter;
 			stringFormat.FormatFlags = StringFormatFlags.NoWrap;

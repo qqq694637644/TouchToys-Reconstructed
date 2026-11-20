@@ -37,6 +37,10 @@ public sealed class LauncherItem : INotifyPropertyChanged
 		}
 	}
 
+	public FontFamily FallbackFontFamily => IconFontResolver.CreateXamlFontFamily(FallbackGlyph, Entry.IconFont);
+
+	public FontFamily DeleteFontFamily => IconFontResolver.CreateXamlFontFamily("\ue711");
+
 	public ImageSource? Icon { get; private set; }
 
 	public Visibility FallbackVisibility

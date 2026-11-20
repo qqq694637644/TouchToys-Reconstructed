@@ -4,6 +4,7 @@ using System.Globalization;
 using System.Linq;
 using System.Text.Json;
 using System.Text.RegularExpressions;
+using TouchAssistant.Services;
 
 namespace TouchAssistant.Models;
 
@@ -599,7 +600,7 @@ public sealed class Settings
 				EdgeGestures[2] = GestureAction.BuiltIn("Overview");
 			}
 		}
-		SchemaVersion = 11;
+		SchemaVersion = 12;
 		LauncherSpacing = Clamp(LauncherSpacing, 0.0, 20.0, 4.0);
 		WheelCancelRadius = Clamp(WheelCancelRadius, 1.0, 6.0, 2.0);
 		TopEdgeInset = Clamp(TopEdgeInset, 0.0, 64.0, 0.0);
@@ -819,22 +820,6 @@ public sealed class Settings
 			{
 				gesture3.Label = gesture3.Label.Substring(0, 20);
 			}
-			bool flag;
-			switch (gesture3.IconFont)
-			{
-			case "Segoe Fluent Icons":
-			case "Segoe MDL2 Assets":
-			case "Segoe UI Symbol":
-				flag = true;
-				break;
-			default:
-				flag = false;
-				break;
-			}
-			if (!flag)
-			{
-				gesture3.IconFont = "Segoe Fluent Icons";
-			}
 		}
 		for (int num3 = 0; num3 < EdgeGestures.Count; num3++)
 		{
@@ -878,7 +863,17 @@ public sealed class Settings
 				edgeGesture.Kind = ActionKind.None;
 			}
 		}
-		Launchers.RemoveAll((LauncherEntry x) => x == null || (string.IsNullOrWhiteSpace(x.Target) && (x.Keys == null || x.Keys.Count == 0)));
+		Launchers.RemoveAll((LauncherEntry x) => x == null);
+		foreach (LauncherEntry launcher in Launchers)
+		{
+			launcher.Name ??= "应用";
+			launcher.Target ??= "";
+			launcher.IconGlyph ??= "";
+			launcher.IconPath ??= "";
+			launcher.Keys ??= new List<int>();
+			launcher.IconFont = IconFontResolver.NormalizeIconFont(launcher.IconFont, launcher.IconGlyph);
+		}
+		Launchers.RemoveAll((LauncherEntry x) => string.IsNullOrWhiteSpace(x.Target) && x.Keys.Count == 0);
 	}
 
 	public static string NormalizeColor(string? value, string fallback)
@@ -1071,6 +1066,7 @@ public sealed class Settings
 		{
 			string text = (gestureAction.IconPath = "");
 		}
+		action.IconFont = IconFontResolver.NormalizeIconFont(action.IconFont, action.Icon);
 	}
 
 	private static double Clamp(double n, double min, double max, double fallback)
