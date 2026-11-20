@@ -70,7 +70,8 @@ internal static class Program
         for (int i = 0; i < expected.Length; i++)
             Equal(expected[i], WheelDrawing.ResolveLabel(actions[i]), $"default wheel label {i}");
 
-        GestureAction custom = GestureAction.BuiltIn("TaskView") { Label = "自定义任务" };
+        GestureAction custom = GestureAction.BuiltIn("TaskView");
+        custom.Label = "自定义任务";
         Equal("自定义任务", WheelDrawing.ResolveLabel(custom), "custom label takes precedence");
 
         custom.Label = "  ";
