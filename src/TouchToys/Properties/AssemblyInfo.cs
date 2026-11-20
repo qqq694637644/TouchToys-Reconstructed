@@ -16,3 +16,4 @@ using System.Security.Permissions;
 [assembly: TargetPlatform("Windows10.0.22621.0")]
 [assembly: SupportedOSPlatform("Windows10.0.19041.0")]
 [assembly: AssemblyVersion("0.8.54.0")]
+[assembly: InternalsVisibleTo("TouchToys.RegressionTests")]

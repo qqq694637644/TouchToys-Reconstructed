@@ -19,7 +19,14 @@ The main application UI and behavior are implemented in C#. The supplied package
 On Windows with the .NET 8 SDK and Windows 10/11 SDK installed:
 
 ```powershell
+dotnet build .\TouchToys.sln -c Release
 dotnet publish .\src\TouchToys\TouchToys.csproj -c Release -r win-x64 --self-contained true
+```
+
+Run the deterministic core regression suite:
+
+```powershell
+dotnet run --project .\tests\TouchToys.RegressionTests\TouchToys.RegressionTests.csproj -c Release -r win-x64
 ```
 
 Create an MSIX package:
@@ -33,7 +40,7 @@ The script writes packages under `artifacts/`. The production manifest in `src/T
 
 ## CI
 
-GitHub Actions builds both architectures. The x64 job signs a CI-only MSIX with an ephemeral certificate, installs it on the Windows runner, runs the built-in UI/touch smoke suite, and uploads its JSON report and PNG screenshots as workflow artifacts. The CI manifest omits the restricted `uiAccess` capability so a temporary test certificate can be used safely.
+GitHub Actions first runs the deterministic gesture/geometry regression suite, then builds both architectures. The x64 job signs a CI-only MSIX with an ephemeral certificate, installs it on the Windows runner, runs the built-in UI/touch smoke suite, and uploads its JSON report and PNG screenshots as workflow artifacts. The CI manifest omits the restricted `uiAccess` capability so a temporary test certificate can be used safely.
 
 ## Reconstruction notes
 
@@ -43,6 +50,7 @@ GitHub Actions builds both architectures. The x64 job signs a CI-only MSIX with 
 - The original MSIX bundle, test certificate, private signing material, and original runtime binaries are not included.
 
 See [the reverse-engineering notes](docs/REVERSE_ENGINEERING.md) for evidence, dependencies, and known gaps.
+See [the function-parity plan](docs/FUNCTION_PARITY.md) for the recovered feature map, regression coverage, and remaining hardware/runtime checks.
 
 ## License
 

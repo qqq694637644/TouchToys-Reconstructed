@@ -1,5 +1,9 @@
 name: Windows build, smoke tests and screenshots
 
+concurrency:
+  group: toucht-toys-${{ github.ref }}
+  cancel-in-progress: true
+
 on:
   push:
     branches: [main]
@@ -10,10 +14,28 @@ permissions:
   contents: read
 
 jobs:
+  regression-tests:
+    name: Core logic regression tests
+    runs-on: windows-latest
+    timeout-minutes: 20
+    steps:
+      - name: Check out source
+        uses: actions/checkout@v4
+
+      - name: Install .NET 8 SDK
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 8.0.x
+
+      - name: Run deterministic gesture and geometry tests
+        shell: powershell
+        run: dotnet run --project .\tests\TouchToys.RegressionTests\TouchToys.RegressionTests.csproj --configuration Release -r win-x64
+
   build:
     name: Build ${{ matrix.arch }}
     runs-on: windows-latest
     timeout-minutes: 35
+    needs: regression-tests
     strategy:
       fail-fast: false
       matrix:
@@ -55,6 +77,8 @@ jobs:
           Export-Certificate -Cert $cert -FilePath $cer | Out-Null
           Import-Certificate -FilePath $cer -CertStoreLocation 'Cert:\CurrentUser\Root' | Out-Null
           Import-Certificate -FilePath $cer -CertStoreLocation 'Cert:\CurrentUser\TrustedPeople' | Out-Null
+          Import-Certificate -FilePath $cer -CertStoreLocation 'Cert:\LocalMachine\Root' | Out-Null
+          Import-Certificate -FilePath $cer -CertStoreLocation 'Cert:\LocalMachine\TrustedPeople' | Out-Null
 
           $unlockKey = 'HKLM:\SOFTWARE\Microsoft\Windows\CurrentVersion\AppModelUnlock'
           New-Item -Path $unlockKey -Force | Out-Null
@@ -71,7 +95,26 @@ jobs:
           & $signtool.FullName sign /fd SHA256 /f $pfx /p $plainPassword $msix
           if ($LASTEXITCODE -ne 0) { throw "SignTool failed with exit code $LASTEXITCODE" }
 
-          Add-AppxPackage -Path $msix -ForceApplicationShutdown
+          Write-Host 'Starting AppX deployment (300-second timeout)...'
+          $installJob = Start-Job -ScriptBlock {
+            param($PackagePath)
+            Add-AppxPackage -Path $PackagePath -ForceApplicationShutdown -ErrorAction Stop
+          } -ArgumentList $msix
+          if (-not (Wait-Job -Job $installJob -Timeout 300)) {
+            Stop-Job -Job $installJob -ErrorAction SilentlyContinue
+            Receive-Job -Job $installJob -ErrorAction SilentlyContinue | Out-String | Write-Host
+            Remove-Job -Job $installJob -Force -ErrorAction SilentlyContinue
+            throw 'Add-AppxPackage timed out after 300 seconds.'
+          }
+          $installState = $installJob.State
+          $installOutput = Receive-Job -Job $installJob -ErrorAction SilentlyContinue
+          $installOutput | Out-String | Write-Host
+          Remove-Job -Job $installJob -Force -ErrorAction SilentlyContinue
+          if ($installState -ne 'Completed') { throw "Add-AppxPackage ended in state $installState." }
+
+          $installed = Get-AppxPackage -Name 'TouchToys.Reconstructed' | Select-Object -First 1
+          if ($null -eq $installed) { throw 'Package deployment completed but the package is not registered.' }
+          Write-Host "Installed package: $($installed.PackageFullName)"
 
       - name: Run UI and touch smoke tests
         if: matrix.arch == 'x64'
@@ -79,6 +122,11 @@ jobs:
         run: |
           $output = Join-Path $env:GITHUB_WORKSPACE 'artifacts\smoke-x64'
           .\scripts\Run-SmokeTest.ps1 -OutputDirectory $output -TimeoutSeconds 420 -IncludeTouch
+
+      - name: Run targeted version regression suites
+        if: matrix.arch == 'x64'
+        shell: powershell
+        run: .\scripts\Run-TargetedSmoke.ps1 -OutputRoot (Join-Path $env:GITHUB_WORKSPACE 'artifacts\targeted') -TimeoutSeconds 420
 
       - name: Upload MSIX and screenshot artifacts
         if: always()
@@ -88,5 +136,6 @@ jobs:
           path: |
             artifacts/TouchToys-Reconstructed-${{ matrix.arch }}.msix
             artifacts/smoke-x64/**
+            artifacts/targeted/**
           if-no-files-found: warn
           retention-days: 30

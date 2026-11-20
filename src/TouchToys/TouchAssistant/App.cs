@@ -850,6 +850,7 @@ public class App : Application, IXamlMetadataProvider
 		catch (Exception ex)
 		{
 			File.WriteAllText(Path.Combine(TestOutputDirectory, "relay-integration.txt"), ex.ToString());
+			Environment.ExitCode = 1;
 		}
 		finally
 		{
@@ -5239,6 +5240,7 @@ public class App : Application, IXamlMetadataProvider
 		{
 			Log(ex);
 			File.WriteAllText(Path.Combine(TestOutputDirectory, "smoke-test.json"), ex.ToString());
+			Environment.ExitCode = 1;
 		}
 		Shutdown();
 	}
@@ -5337,6 +5339,7 @@ public class App : Application, IXamlMetadataProvider
 		catch (Exception ex)
 		{
 			File.WriteAllText(Path.Combine(TestOutputDirectory, "preview-probe.txt"), ex.ToString());
+			Environment.ExitCode = 1;
 		}
 		finally
 		{
@@ -5395,6 +5398,7 @@ public class App : Application, IXamlMetadataProvider
 			{
 				Log(ex);
 				File.WriteAllText(Path.Combine(TestOutputDirectory, "thin-edge-smoke.txt"), ex.ToString());
+				Environment.ExitCode = 1;
 				return;
 			}
 			finally
@@ -5482,6 +5486,7 @@ public class App : Application, IXamlMetadataProvider
 		catch (Exception ex3)
 		{
 			File.WriteAllText(Path.Combine(TestOutputDirectory, "edge-smoke.txt"), ex3.ToString());
+			Environment.ExitCode = 1;
 		}
 		finally
 		{

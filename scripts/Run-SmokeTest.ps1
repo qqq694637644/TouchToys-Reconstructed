@@ -19,10 +19,11 @@ if (-not (Test-Path -LiteralPath $executable)) {
     throw "Installed executable not found: $executable"
 }
 
+Remove-Item -LiteralPath $OutputDirectory -Recurse -Force -ErrorAction SilentlyContinue
 New-Item -ItemType Directory -Force -Path $OutputDirectory | Out-Null
 $env:TOUCHTOYS_TEST_OUTPUT_DIR = (Resolve-Path -LiteralPath $OutputDirectory).Path
 
-$arguments = @('--smoke-test')
+$arguments = @('--smoke-test', '--capture-ui')
 if ($IncludeTouch) {
     $arguments += '--touch-smoke'
 }
@@ -57,8 +58,14 @@ try {
 if ($report.Result -ne 'PASS') {
     throw "Smoke test did not pass: $reportText"
 }
+if ($report.ContinuousScrolling -ne 'PASS' -or $report.EdgeGestureRouting -notlike 'PASS*') {
+    throw "Core interaction assertions did not pass: $reportText"
+}
 
 if ($IncludeTouch) {
+    if ($report.PanelTouchInput -ne 'PASS' -or $report.EdgeTouchInput -ne 'PASS') {
+        throw "Touch input assertions did not pass: $reportText"
+    }
     $touchReport = Join-Path $OutputDirectory 'touch-smoke.txt'
     if (-not (Test-Path -LiteralPath $touchReport)) {
         throw "Touch smoke report was not created: $touchReport"
