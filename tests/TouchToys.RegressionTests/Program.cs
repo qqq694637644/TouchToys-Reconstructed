@@ -1,4 +1,5 @@
 using TouchAssistant.Core;
+using TouchAssistant.Models;
 
 internal static class Program
 {
@@ -19,6 +20,10 @@ internal static class Program
         Run("multitouch.two-finger-swipe", MultiTouchTwoFingerSwipe);
         Run("multitouch.hold", MultiTouchHold);
         Run("multitouch.rejects-wide-contact-set", MultiTouchRejectsWideContactSet);
+        Run("custom-shape.translation-scale-normalization", ShapeNormalization);
+        Run("custom-shape.single-stroke-match", ShapeSingleStrokeMatch);
+        Run("custom-shape.recording-completion", ShapeRecordingCompletion);
+        Run("custom-shape.multi-finger-path-match", ShapeSequenceMultiFingerMatch);
         Run("geometry.control-center-four-sides", ControlCenterFourSides);
         Run("geometry.bottom-edge-thresholds", BottomEdgeThresholds);
         Run("geometry.reveal-and-dial-index", RevealAndDialIndex);
@@ -216,6 +221,88 @@ internal static class Program
         recognizer.Feed(1, 0, 0, false, true, false, 30, 50, 200);
         MultiTouchRecognizer.Match? match = recognizer.Feed(2, 100, 0, false, true, false, 40, 50, 200);
         Assert(!match.HasValue, "too-wide contact set should be rejected");
+    }
+
+    private static List<GesturePoint> HorizontalStroke(double offsetX = 0, double offsetY = 0, double scale = 1)
+    {
+        return new List<GesturePoint>
+        {
+            new(offsetX, offsetY),
+            new(offsetX + 50 * scale, offsetY),
+            new(offsetX + 100 * scale, offsetY)
+        };
+    }
+
+    private static void ShapeNormalization()
+    {
+        List<GesturePoint> first = ShapeGesture.Normalize(HorizontalStroke());
+        List<GesturePoint> transformed = ShapeGesture.Normalize(HorizontalStroke(350, -90, 2.5));
+        Equal(64, first.Count, "normalized sample count");
+        Equal(64, transformed.Count, "transformed normalized sample count");
+        for (int i = 0; i < 64; i++)
+        {
+            Near(first[i].X, transformed[i].X, $"normalized X sample {i}", 0.00001);
+            Near(first[i].Y, transformed[i].Y, $"normalized Y sample {i}", 0.00001);
+        }
+    }
+
+    private static void ShapeSingleStrokeMatch()
+    {
+        List<GesturePoint> template = HorizontalStroke();
+        MultiTouchBinding binding = new()
+        {
+            Fingers = 2,
+            Gesture = "Custom",
+            Points = template,
+            Action = new GestureAction { Kind = ActionKind.Keys, Keys = new List<int> { 513 } }
+        };
+        MultiTouchBinding? match = ShapeGesture.Match(HorizontalStroke(120, 80, 1.8), 2, new[] { binding });
+        Assert(ReferenceEquals(binding, match), "translated/scaled custom stroke did not match its template");
+        Assert(ShapeGesture.Match(new[] { new GesturePoint(0, 0), new GesturePoint(20, 0) }, 2, new[] { binding }) is null,
+            "short custom stroke should not match");
+    }
+
+    private static void ShapeRecordingCompletion()
+    {
+        ShapeRecording recording = new();
+        recording.Down(1, 0, 0, 0, 2, 200);
+        recording.Down(2, 0, 10, 10, 2, 200);
+        recording.Move(1, 100, 0);
+        recording.Move(2, 100, 10);
+        recording.Up(1);
+        Assert(!recording.Complete, "recording must wait for all contacts to release");
+        recording.Up(2);
+        Assert(recording.Complete, "valid two-contact shape recording did not complete");
+        Equal(2, recording.Paths.Count, "recorded stroke count");
+    }
+
+    private static void ShapeSequenceMultiFingerMatch()
+    {
+        MultiTouchBinding binding = new()
+        {
+            Fingers = 2,
+            Gesture = "Custom",
+            Paths = new List<List<GesturePoint>>
+            {
+                HorizontalStroke(),
+                HorizontalStroke(0, 10)
+            },
+            Action = new GestureAction { Kind = ActionKind.Keys, Keys = new List<int> { 514 } }
+        };
+        MultiTouchSettings options = new()
+        {
+            MaxSpacing = 200,
+            MatchStrictness = 60,
+            Bindings = new List<MultiTouchBinding> { binding }
+        };
+        ShapeSequence sequence = new();
+        sequence.Feed(1, 0, 0, down: true, up: false, cancel: false, 0, options);
+        sequence.Feed(2, 0, 10, down: true, up: false, cancel: false, 10, options);
+        sequence.Feed(1, 100, 0, down: false, up: false, cancel: false, 50, options);
+        sequence.Feed(2, 100, 10, down: false, up: false, cancel: false, 60, options);
+        sequence.Feed(1, 100, 0, down: false, up: true, cancel: false, 70, options);
+        MultiTouchBinding? match = sequence.Feed(2, 100, 10, down: false, up: true, cancel: false, 80, options);
+        Assert(ReferenceEquals(binding, match), "two-finger custom path sequence did not match");
     }
 
     private static void ControlCenterFourSides()

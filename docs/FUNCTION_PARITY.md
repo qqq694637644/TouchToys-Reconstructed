@@ -4,6 +4,10 @@
 
 The x64 and ARM64 `TouchToys.dll` assemblies were decompiled independently with ILSpyCmd 9.1.0.7988. The raw x64 decompilation produced 219 C# files. The application project retains the decompiled application code and excludes compiler-generated WinRT generic helpers that the current WinRT source generator regenerates.
 
+The raw x64 and ARM64 decompilations were also compared against each other: both produced 219 C# files, and the only source differences were generated XAML/WinRT type-info and vtable-helper files. No application feature class differed between the two architecture builds. This supports using one shared C# application source tree for both RIDs while letting the SDK regenerate architecture-appropriate interop helpers.
+
+As an additional structural check, ILSpy type inventories for the original x64 assembly and the rebuilt x64 assembly contain exactly the same 213 non-compiler-generated type names. The total metadata type counts differ by one because compiler-generated closure/async state-machine names are emitted differently by the current compiler; no user-defined type was missing or added in that comparison.
+
 The current source intentionally stays close to the decompiler output. Manual changes are limited to:
 
 - `TouchpadGesture.cs`: repair current/start contact coordinate references so movement, pinch distance, and swipe displacement are computed from the correct points.
@@ -32,11 +36,12 @@ The rest of the editable application source is kept as close as practical to the
 
 ## Deterministic regression tests
 
-`tests/TouchToys.RegressionTests` currently covers 16 deterministic cases:
+`tests/TouchToys.RegressionTests` currently covers 20 deterministic cases:
 
 - TT touchpad single click, double-tap binding, pinch-out, two-finger scroll, three-finger scroll, two-finger swipe, and hold.
 - Middle-area double tap and hold.
 - Global multi-touch two-finger swipe, hold, and rejection of an invalid wide contact set.
+- Custom-shape normalization across translation/scale, single-stroke template matching, multi-contact recording completion, and two-finger path matching.
 - Control-center geometry for all four sides.
 - Bottom-edge thresholds and reveal/Dial geometry.
 - Global touch relay idle-reset guard and retry backoff.
