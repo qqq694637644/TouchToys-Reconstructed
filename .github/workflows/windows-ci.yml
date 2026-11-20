@@ -1,0 +1,87 @@
+name: Windows build, smoke tests and screenshots
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    name: Build ${{ matrix.arch }}
+    runs-on: windows-latest
+    timeout-minutes: 35
+    strategy:
+      fail-fast: false
+      matrix:
+        arch: [x64, arm64]
+
+    steps:
+      - name: Check out source
+        uses: actions/checkout@v4
+
+      - name: Install .NET 8 SDK
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 8.0.x
+
+      - name: Build and package MSIX
+        shell: pwsh
+        run: .\scripts\Build-Msix.ps1 -Architecture '${{ matrix.arch }}' -Configuration Release -CiManifest
+
+      - name: Create temporary signing certificate and install x64 package
+        if: matrix.arch == 'x64'
+        shell: powershell
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $msix = Join-Path $env:GITHUB_WORKSPACE 'artifacts\TouchToys-Reconstructed-x64.msix'
+          if (-not (Test-Path -LiteralPath $msix)) { throw "MSIX not found: $msix" }
+
+          $cert = New-SelfSignedCertificate -Type CodeSigningCert `
+            -Subject 'CN=TouchToys-Reconstructed' `
+            -CertStoreLocation 'Cert:\CurrentUser\My' `
+            -KeyExportPolicy Exportable `
+            -KeyLength 2048 `
+            -HashAlgorithm SHA256
+
+          $plainPassword = [Guid]::NewGuid().ToString('N')
+          $securePassword = ConvertTo-SecureString $plainPassword -AsPlainText -Force
+          $pfx = Join-Path $env:RUNNER_TEMP 'TouchToys-Reconstructed-CI.pfx'
+          $cer = Join-Path $env:RUNNER_TEMP 'TouchToys-Reconstructed-CI.cer'
+          Export-PfxCertificate -Cert $cert -FilePath $pfx -Password $securePassword | Out-Null
+          Export-Certificate -Cert $cert -FilePath $cer | Out-Null
+          Import-Certificate -FilePath $cer -CertStoreLocation 'Cert:\CurrentUser\Root' | Out-Null
+          Import-Certificate -FilePath $cer -CertStoreLocation 'Cert:\CurrentUser\TrustedPeople' | Out-Null
+
+          $kits = Join-Path ([Environment]::GetEnvironmentVariable('ProgramFiles(x86)')) 'Windows Kits\10\bin'
+          $signtool = Get-ChildItem -LiteralPath $kits -Recurse -File -Filter 'signtool.exe' |
+            Where-Object { $_.FullName -match '\\x64\\signtool\.exe$' } |
+            Sort-Object FullName -Descending |
+            Select-Object -First 1
+          if ($null -eq $signtool) { throw 'SignTool.exe was not found.' }
+
+          & $signtool.FullName sign /fd SHA256 /f $pfx /p $plainPassword $msix
+          if ($LASTEXITCODE -ne 0) { throw "SignTool failed with exit code $LASTEXITCODE" }
+
+          Add-AppxPackage -Path $msix -ForceApplicationShutdown
+
+      - name: Run UI and touch smoke tests
+        if: matrix.arch == 'x64'
+        shell: powershell
+        run: |
+          $output = Join-Path $env:GITHUB_WORKSPACE 'artifacts\smoke-x64'
+          .\scripts\Run-SmokeTest.ps1 -OutputDirectory $output -TimeoutSeconds 420 -IncludeTouch
+
+      - name: Upload MSIX and screenshot artifacts
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: TouchToys-${{ matrix.arch }}-artifacts
+          path: |
+            artifacts/TouchToys-Reconstructed-${{ matrix.arch }}.msix
+            artifacts/smoke-x64/**
+          if-no-files-found: warn
+          retention-days: 30

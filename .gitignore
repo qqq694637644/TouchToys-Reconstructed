@@ -1,0 +1,17 @@
+**/bin/
+**/obj/
+.vs/
+.idea/
+artifacts/
+inputs/
+*.user
+*.suo
+*.pfx
+*.p12
+*.cer
+*.msix
+*.msixbundle
+*.appx
+*.zip
+*.dmp
+*.log
