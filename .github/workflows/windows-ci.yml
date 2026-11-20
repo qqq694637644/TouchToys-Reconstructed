@@ -56,6 +56,11 @@ jobs:
           Import-Certificate -FilePath $cer -CertStoreLocation 'Cert:\CurrentUser\Root' | Out-Null
           Import-Certificate -FilePath $cer -CertStoreLocation 'Cert:\CurrentUser\TrustedPeople' | Out-Null
 
+          $unlockKey = 'HKLM:\SOFTWARE\Microsoft\Windows\CurrentVersion\AppModelUnlock'
+          New-Item -Path $unlockKey -Force | Out-Null
+          New-ItemProperty -Path $unlockKey -Name 'AllowAllTrustedApps' -PropertyType DWord -Value 1 -Force | Out-Null
+          New-ItemProperty -Path $unlockKey -Name 'AllowDevelopmentWithoutDevLicense' -PropertyType DWord -Value 1 -Force | Out-Null
+
           $kits = Join-Path ([Environment]::GetEnvironmentVariable('ProgramFiles(x86)')) 'Windows Kits\10\bin'
           $signtool = Get-ChildItem -LiteralPath $kits -Recurse -File -Filter 'signtool.exe' |
             Where-Object { $_.FullName -match '\\x64\\signtool\.exe$' } |

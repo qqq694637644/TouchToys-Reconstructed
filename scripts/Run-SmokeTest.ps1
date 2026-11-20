@@ -63,8 +63,12 @@ if ($IncludeTouch) {
     if (-not (Test-Path -LiteralPath $touchReport)) {
         throw "Touch smoke report was not created: $touchReport"
     }
-    if ((Get-Content -LiteralPath $touchReport -Raw) -notmatch '^PASS:') {
-        throw "Touch smoke report did not pass: $touchReport"
+    $touchText = Get-Content -LiteralPath $touchReport -Raw
+    if ($touchText -notmatch '(?im)^PASS') {
+        throw "Touch smoke report did not contain a PASS result: $touchReport"
+    }
+    if ($touchText -match '(?im)^(FAIL|ERROR)') {
+        throw "Touch smoke report contains a failure: $touchReport"
     }
 }
 
