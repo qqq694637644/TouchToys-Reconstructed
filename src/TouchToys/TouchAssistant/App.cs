@@ -5633,12 +5633,13 @@ public class App : Application, IXamlMetadataProvider
 		if (!_contentLoaded)
 		{
 			_contentLoaded = true;
-			Resources.MergedDictionaries.Add(new XamlControlsResources());
+			ResourceDictionary appResources = new ResourceDictionary();
+			appResources.MergedDictionaries.Add(new XamlControlsResources());
 			object background;
 			object borderBrush;
 			try
 			{
-				background = Resources["CardBackgroundFillColorDefaultBrush"];
+				background = appResources["CardBackgroundFillColorDefaultBrush"];
 			}
 			catch (Exception)
 			{
@@ -5646,7 +5647,7 @@ public class App : Application, IXamlMetadataProvider
 			}
 			try
 			{
-				borderBrush = Resources["CardStrokeColorDefaultBrush"];
+				borderBrush = appResources["CardStrokeColorDefaultBrush"];
 			}
 			catch (Exception)
 			{
@@ -5655,7 +5656,8 @@ public class App : Application, IXamlMetadataProvider
 			Style settingsCardStyle = new Style(typeof(Border));
 			settingsCardStyle.Setters.Add(new Microsoft.UI.Xaml.Setter(Border.BackgroundProperty, background));
 			settingsCardStyle.Setters.Add(new Microsoft.UI.Xaml.Setter(Border.BorderBrushProperty, borderBrush));
-			Resources["SettingsCardStyle"] = settingsCardStyle;
+			appResources["SettingsCardStyle"] = settingsCardStyle;
+			Resources = appResources;
 		}
 	}
 
