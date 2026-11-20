@@ -1,28 +1,4 @@
 <Application
   x:Class="TouchAssistant.App"
   xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
-  xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-  xmlns:controls="using:Microsoft.UI.Xaml.Controls">
-  <Application.Resources>
-    <ResourceDictionary>
-      <ResourceDictionary.MergedDictionaries>
-        <controls:XamlControlsResources />
-      </ResourceDictionary.MergedDictionaries>
-      <ResourceDictionary.ThemeDictionaries>
-        <ResourceDictionary x:Key="Light">
-          <SolidColorBrush x:Key="LauncherCardBrush" Color="#BFFFFFFF" />
-        </ResourceDictionary>
-        <ResourceDictionary x:Key="Dark">
-          <SolidColorBrush x:Key="LauncherCardBrush" Color="#E5484848" />
-        </ResourceDictionary>
-        <ResourceDictionary x:Key="HighContrast">
-          <SolidColorBrush x:Key="LauncherCardBrush" Color="{ThemeResource SystemColorWindowColor}" />
-        </ResourceDictionary>
-      </ResourceDictionary.ThemeDictionaries>
-      <Style x:Key="SettingsCardStyle" TargetType="Border">
-        <Setter Property="Background" Value="{ThemeResource CardBackgroundFillColorDefaultBrush}" />
-        <Setter Property="BorderBrush" Value="{ThemeResource CardStrokeColorDefaultBrush}" />
-      </Style>
-    </ResourceDictionary>
-  </Application.Resources>
-</Application>
+  xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml" />
