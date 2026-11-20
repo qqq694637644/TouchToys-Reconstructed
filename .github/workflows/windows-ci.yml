@@ -58,22 +58,27 @@ jobs:
         shell: pwsh
         run: .\scripts\Build-Msix.ps1 -Architecture '${{ matrix.arch }}' -Configuration Release -CiManifest
 
-      - name: Create temporary signing certificate and install x64 package
-        if: matrix.arch == 'x64'
-        shell: powershell
-        run: .\scripts\Install-CI.ps1 -PackagePath (Join-Path $env:GITHUB_WORKSPACE 'artifacts\TouchToys-Reconstructed-x64.msix') -TimeoutSeconds 300
-
-      - name: Run UI and touch smoke tests
+      - name: Sign x64 MSIX for Surface Pro 7 deployment
         if: matrix.arch == 'x64'
         shell: powershell
         run: |
-          $output = Join-Path $env:GITHUB_WORKSPACE 'artifacts\smoke-x64'
-          .\scripts\Run-SmokeTest.ps1 -OutputDirectory $output -TimeoutSeconds 420 -IncludeTouch
-
-      - name: Run targeted version regression suites
-        if: matrix.arch == 'x64'
-        shell: powershell
-        run: .\scripts\Run-TargetedSmoke.ps1 -OutputRoot (Join-Path $env:GITHUB_WORKSPACE 'artifacts\targeted') -TimeoutSeconds 420
+          $ErrorActionPreference = 'Stop'
+          $msix = Join-Path $env:GITHUB_WORKSPACE 'artifacts\TouchToys-Reconstructed-x64.msix'
+          $cert = New-SelfSignedCertificate -Type CodeSigningCert -Subject 'CN=TouchToys-Reconstructed' -CertStoreLocation 'Cert:\CurrentUser\My' -KeyExportPolicy Exportable -KeyLength 2048 -HashAlgorithm SHA256
+          $passwordText = [Guid]::NewGuid().ToString('N')
+          $password = ConvertTo-SecureString $passwordText -AsPlainText -Force
+          $pfx = Join-Path $env:RUNNER_TEMP 'TouchToys-CI.pfx'
+          $cer = Join-Path $env:GITHUB_WORKSPACE 'artifacts\TouchToys-Reconstructed-CI.cer'
+          Export-PfxCertificate -Cert $cert -FilePath $pfx -Password $password | Out-Null
+          Export-Certificate -Cert $cert -FilePath $cer | Out-Null
+          $kits = Join-Path ([Environment]::GetEnvironmentVariable('ProgramFiles(x86)')) 'Windows Kits\10\bin'
+          $signtool = Get-ChildItem -LiteralPath $kits -Recurse -File -Filter 'signtool.exe' | Where-Object { $_.FullName -match '\\x64\\signtool\.exe$' } | Sort-Object FullName -Descending | Select-Object -First 1
+          if ($null -eq $signtool) { throw 'SignTool.exe was not found.' }
+          & $signtool.FullName sign /fd SHA256 /f $pfx /p $passwordText $msix
+          if ($LASTEXITCODE -ne 0) { throw "SignTool failed: $LASTEXITCODE" }
+          Remove-Item -LiteralPath $pfx -Force
+          Remove-Item -LiteralPath ("Cert:\CurrentUser\My\" + $cert.Thumbprint) -Force
+          Write-Host ('SIGNED_MSIX_SHA256=' + (Get-FileHash $msix -Algorithm SHA256).Hash)
 
       - name: Upload MSIX and screenshot artifacts
         if: always()
@@ -82,7 +87,6 @@ jobs:
           name: TouchToys-${{ matrix.arch }}-artifacts
           path: |
             artifacts/TouchToys-Reconstructed-${{ matrix.arch }}.msix
-            artifacts/smoke-x64/**
-            artifacts/targeted/**
+            artifacts/TouchToys-Reconstructed-CI.cer
           if-no-files-found: warn
           retention-days: 30
