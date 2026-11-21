@@ -840,6 +840,7 @@ internal sealed class SettingsWindow : Window
 			}
 			catch (Exception ex)
 			{
+				Diagnostics.Error(ex, "Startup.Toggle");
 				App.CurrentApp.Report(ex.Message);
 				startup.IsOn = StartupRegistration.Enabled;
 			}

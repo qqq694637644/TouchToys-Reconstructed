@@ -65,6 +65,26 @@ if ($CiManifest) {
 }
 Invoke-RepoDotnet -Arguments $publishArguments
 
+# The .NET SDK emits uiAccess="false" in its generated app.dev.manifest,
+# even when the supplied production application manifest requests uiAccess=true.
+# Re-embed the selected source manifest so the signed executable carries the
+# trust level that matches its package manifest.
+$manifestToEmbed = if ($CiManifest) { $ciApplicationManifest } else { $applicationManifest }
+$executable = Join-Path $publishDirectory 'TouchToys.exe'
+$windowsKits = Join-Path ([Environment]::GetEnvironmentVariable('ProgramFiles(x86)')) 'Windows Kits\10\bin'
+$mt = Get-ChildItem -LiteralPath $windowsKits -Recurse -File -Filter 'mt.exe' |
+    Where-Object { $_.FullName -match '\\x64\\mt\.exe$' } |
+    Sort-Object FullName -Descending |
+    Select-Object -First 1
+if ($null -eq $mt) {
+    throw "Manifest Tool (mt.exe) was not found under $windowsKits"
+}
+Write-Host "Embedding $manifestToEmbed into TouchToys.exe with $($mt.FullName)..."
+& $mt.FullName -manifest $manifestToEmbed "-outputresource:$executable;#1"
+if ($LASTEXITCODE -ne 0) {
+    throw "Manifest Tool failed with exit code $LASTEXITCODE"
+}
+
 $buildOutput = Join-Path $repoRoot "src\TouchToys\bin\$Configuration\net8.0-windows10.0.22621.0\$runtimeIdentifier"
 $generatedPri = Join-Path $buildOutput 'TouchToys.pri'
 if (-not (Test-Path -LiteralPath $generatedPri)) {
@@ -105,7 +125,6 @@ foreach ($required in @(
     }
 }
 
-$windowsKits = Join-Path ([Environment]::GetEnvironmentVariable('ProgramFiles(x86)')) 'Windows Kits\10\bin'
 $makeAppx = Get-ChildItem -LiteralPath $windowsKits -Recurse -File -Filter 'makeappx.exe' -ErrorAction Stop |
     Where-Object { $_.FullName -match '\\x64\\makeappx\.exe$' } |
     Sort-Object FullName -Descending |
