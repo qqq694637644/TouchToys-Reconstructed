@@ -101,6 +101,21 @@ $identity = $manifest.SelectSingleNode("/*[local-name()='Package']/*[local-name(
 if ($null -eq $identity) {
     throw 'Package Identity element is missing from AppxManifest.xml'
 }
+$application = $manifest.SelectSingleNode("/*[local-name()='Package']/*[local-name()='Applications']/*[local-name()='Application']")
+$runtimeBehavior = $application.GetAttribute('RuntimeBehavior', 'http://schemas.microsoft.com/appx/manifest/uap/windows10/10')
+$trustLevel = $application.GetAttribute('TrustLevel', 'http://schemas.microsoft.com/appx/manifest/uap/windows10/10')
+if ($runtimeBehavior -ne 'packagedClassicApp' -or $trustLevel -ne 'mediumIL') {
+    throw "TouchToys uses Windows App SDK / WinUI 3 and must be packagedClassicApp/mediumIL (found $runtimeBehavior/$trustLevel)."
+}
+$startupExtension = $application.SelectSingleNode("./*[local-name()='Extensions']/*[local-name()='Extension' and @Category='windows.startupTask']")
+if ($null -eq $startupExtension -or $startupExtension.GetAttribute('Executable') -ne 'TouchToys.exe' -or $startupExtension.GetAttribute('EntryPoint') -ne 'Windows.FullTrustApplication') {
+    throw 'The packaged desktop startup task must declare Executable=TouchToys.exe and EntryPoint=Windows.FullTrustApplication on the Extension.'
+}
+$extensionRuntimeBehavior = $startupExtension.GetAttribute('RuntimeBehavior', 'http://schemas.microsoft.com/appx/manifest/uap/windows10/10')
+$extensionTrustLevel = $startupExtension.GetAttribute('TrustLevel', 'http://schemas.microsoft.com/appx/manifest/uap/windows10/10')
+if (($extensionRuntimeBehavior -and $extensionRuntimeBehavior -ne $runtimeBehavior) -or ($extensionTrustLevel -and $extensionTrustLevel -ne $trustLevel)) {
+    throw "Startup task activation metadata contradicts its parent Application ($extensionRuntimeBehavior/$extensionTrustLevel vs $runtimeBehavior/$trustLevel)."
+}
 $identity.SetAttribute('ProcessorArchitecture', $Architecture)
 $manifest.Save($manifestPath)
 

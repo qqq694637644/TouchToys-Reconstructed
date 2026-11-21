@@ -7,7 +7,7 @@
          IgnorableNamespaces="uap rescap desktop uap10">
   <Identity Name="TouchToys.Reconstructed"
             Publisher="CN=TouchToys-Reconstructed"
-             Version="0.8.54.7"
+            Version="0.8.54.8"
             ProcessorArchitecture="x64" />
   <Properties>
     <DisplayName>TouchToys Reconstructed</DisplayName>
@@ -25,7 +25,7 @@
   <Applications>
     <Application Id="App"
                  Executable="TouchToys.exe"
-                 uap10:RuntimeBehavior="win32App"
+                 uap10:RuntimeBehavior="packagedClassicApp"
                  uap10:TrustLevel="mediumIL">
       <uap:VisualElements DisplayName="TouchToys Reconstructed"
                           Description="Reconstructed Windows touch gesture and control application"
@@ -35,9 +35,7 @@
       <Extensions>
         <desktop:Extension Category="windows.startupTask"
                            Executable="TouchToys.exe"
-                           EntryPoint="Windows.FullTrustApplication"
-                           uap10:RuntimeBehavior="packagedClassicApp"
-                           uap10:TrustLevel="mediumIL">
+                           EntryPoint="Windows.FullTrustApplication">
           <desktop:StartupTask TaskId="TouchToysStartup"
                                Enabled="false"
                                DisplayName="TouchToys Reconstructed" />

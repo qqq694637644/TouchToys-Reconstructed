@@ -25,7 +25,7 @@
   <Applications>
     <Application Id="App"
                  Executable="TouchToys.exe"
-                 uap10:RuntimeBehavior="win32App"
+                 uap10:RuntimeBehavior="packagedClassicApp"
                  uap10:TrustLevel="mediumIL">
       <uap:VisualElements DisplayName="TouchToys Reconstructed (CI)"
                           Description="Reconstructed Windows touch gesture and control application"
@@ -35,9 +35,7 @@
       <Extensions>
         <desktop:Extension Category="windows.startupTask"
                            Executable="TouchToys.exe"
-                           EntryPoint="Windows.FullTrustApplication"
-                           uap10:RuntimeBehavior="packagedClassicApp"
-                           uap10:TrustLevel="mediumIL">
+                           EntryPoint="Windows.FullTrustApplication">
           <desktop:StartupTask TaskId="TouchToysStartup"
                                Enabled="false"
                                DisplayName="TouchToys Reconstructed (CI)" />
