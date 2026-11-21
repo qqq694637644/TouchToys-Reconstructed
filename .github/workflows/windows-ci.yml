@@ -34,7 +34,7 @@ jobs:
             10.0.x
 
       - name: Run deterministic gesture and geometry tests
-        shell: powershell
+        shell: pwsh
         run: dotnet run --project .\tests\TouchToys.RegressionTests\TouchToys.RegressionTests.csproj --configuration Release -r win-x64
 
   build:
@@ -63,7 +63,7 @@ jobs:
         run: .\scripts\Build-Msix.ps1 -Architecture '${{ matrix.arch }}' -Configuration Release -CiManifest
 
       - name: Verify unsigned MSIX package
-        shell: powershell
+        shell: pwsh
         run: |
           $ErrorActionPreference = 'Stop'
           $msix = Join-Path $env:GITHUB_WORKSPACE 'artifacts\TouchToys-Reconstructed-${{ matrix.arch }}.msix'
