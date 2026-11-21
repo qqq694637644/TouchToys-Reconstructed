@@ -7,7 +7,7 @@
          IgnorableNamespaces="uap rescap desktop uap10">
   <Identity Name="TouchToys.Reconstructed"
             Publisher="CN=TouchToys-Reconstructed"
-            Version="0.8.54.0"
+             Version="0.8.54.7"
             ProcessorArchitecture="x64" />
   <Properties>
     <DisplayName>TouchToys Reconstructed</DisplayName>
@@ -35,7 +35,8 @@
       <Extensions>
         <desktop:Extension Category="windows.startupTask"
                            Executable="TouchToys.exe"
-                           uap10:RuntimeBehavior="win32App"
+                           EntryPoint="Windows.FullTrustApplication"
+                           uap10:RuntimeBehavior="packagedClassicApp"
                            uap10:TrustLevel="mediumIL">
           <desktop:StartupTask TaskId="TouchToysStartup"
                                Enabled="false"

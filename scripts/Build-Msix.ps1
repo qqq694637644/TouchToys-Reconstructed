@@ -14,9 +14,6 @@ $ErrorActionPreference = 'Stop'
 
 $repoRoot = Split-Path -Parent $PSScriptRoot
 $project = Join-Path $repoRoot 'src\TouchToys\TouchToys.csproj'
-$xbfCompiler = Join-Path $repoRoot 'tools\XbfCompiler\XbfCompiler.csproj'
-$xamlSource = Join-Path $repoRoot 'src\TouchToys\App.xaml'
-$xbfOutput = Join-Path $repoRoot 'src\TouchToys\App.xbf'
 $manifestName = if ($CiManifest) { 'AppxManifest.CI.xml' } else { 'AppxManifest.xml' }
 $manifestSource = Join-Path $repoRoot "src\TouchToys\Package\$manifestName"
 $applicationManifest = Join-Path $repoRoot 'src\TouchToys\app.manifest'
@@ -45,15 +42,10 @@ if (-not (Test-Path -LiteralPath $project)) {
 if (-not (Test-Path -LiteralPath $manifestSource)) {
     throw "Package manifest not found: $manifestSource"
 }
-if (-not (Test-Path -LiteralPath $xbfCompiler) -or -not (Test-Path -LiteralPath $xamlSource)) {
-    throw 'The XBF compiler project or App.xaml source is missing.'
-}
-
 Remove-Item -LiteralPath $publishDirectory, $layoutDirectory -Recurse -Force -ErrorAction SilentlyContinue
 New-Item -ItemType Directory -Force -Path $publishDirectory, $layoutDirectory | Out-Null
 
-Write-Host 'Compiling editable App.xaml to WinUI XBF 2.1 (MUX)...'
-Invoke-RepoDotnet -Arguments @('run', '--project', $xbfCompiler, '--configuration', 'Release', '--', $xamlSource, $xbfOutput)
+Write-Host 'Publishing the original App.xaml text resource (no XBF substitution)...'
 
 Write-Host "Publishing $runtimeIdentifier ($Configuration)..."
 $publishArguments = @(
@@ -72,6 +64,26 @@ if ($CiManifest) {
     $publishArguments += "-p:ApplicationManifest=$ciApplicationManifest"
 }
 Invoke-RepoDotnet -Arguments $publishArguments
+
+# The .NET SDK emits uiAccess="false" in its generated app.dev.manifest,
+# even when the supplied production application manifest requests uiAccess=true.
+# Re-embed the selected source manifest so the signed executable carries the
+# trust level that matches its package manifest.
+$manifestToEmbed = if ($CiManifest) { $ciApplicationManifest } else { $applicationManifest }
+$executable = Join-Path $publishDirectory 'TouchToys.exe'
+$windowsKits = Join-Path ([Environment]::GetEnvironmentVariable('ProgramFiles(x86)')) 'Windows Kits\10\bin'
+$mt = Get-ChildItem -LiteralPath $windowsKits -Recurse -File -Filter 'mt.exe' |
+    Where-Object { $_.FullName -match '\\x64\\mt\.exe$' } |
+    Sort-Object FullName -Descending |
+    Select-Object -First 1
+if ($null -eq $mt) {
+    throw "Manifest Tool (mt.exe) was not found under $windowsKits"
+}
+Write-Host "Embedding $manifestToEmbed into TouchToys.exe with $($mt.FullName)..."
+& $mt.FullName -manifest $manifestToEmbed "-outputresource:$executable;#1"
+if ($LASTEXITCODE -ne 0) {
+    throw "Manifest Tool failed with exit code $LASTEXITCODE"
+}
 
 $buildOutput = Join-Path $repoRoot "src\TouchToys\bin\$Configuration\net8.0-windows10.0.22621.0\$runtimeIdentifier"
 $generatedPri = Join-Path $buildOutput 'TouchToys.pri'
@@ -113,7 +125,6 @@ foreach ($required in @(
     }
 }
 
-$windowsKits = Join-Path ([Environment]::GetEnvironmentVariable('ProgramFiles(x86)')) 'Windows Kits\10\bin'
 $makeAppx = Get-ChildItem -LiteralPath $windowsKits -Recurse -File -Filter 'makeappx.exe' -ErrorAction Stop |
     Where-Object { $_.FullName -match '\\x64\\makeappx\.exe$' } |
     Sort-Object FullName -Descending |

@@ -29,11 +29,15 @@ internal sealed class HintWindow : IDisposable
 
 	private string glyph = "";
 
+	private string glyphFont = IconFontResolver.PreferredFontFamilyName;
+
 	private string iconPath = "";
 
 	private string previousText = "";
 
 	private string previousGlyph = "";
+
+	private string previousGlyphFont = IconFontResolver.PreferredFontFamilyName;
 
 	private string previousIconPath = "";
 
@@ -61,7 +65,7 @@ internal sealed class HintWindow : IDisposable
 
 	internal bool IsShown => shown;
 
-	internal string RenderInfo => $"text={text};glyph={glyph};iconPath={iconPath}";
+	internal string RenderInfo => $"text={text};glyph={glyph};glyphFont={glyphFont};iconPath={iconPath}";
 
 	private static bool Dark
 	{
@@ -125,14 +129,17 @@ internal sealed class HintWindow : IDisposable
 			{
 				previousText = text;
 				previousGlyph = glyph;
+				previousGlyphFont = glyphFont;
 				previousIconPath = iconPath;
 			}
 			else
 			{
 				previousText = (previousGlyph = (previousIconPath = ""));
+				previousGlyphFont = IconFontResolver.PreferredFontFamilyName;
 			}
 			text = ((action.Label.Length > 0) ? action.Label : ActionNames.Describe(action));
 			glyph = (showIcon ? (action.Icon ?? "") : "");
+			glyphFont = showIcon ? IconFontResolver.NormalizeIconFont(action.IconFont, glyph) : IconFontResolver.PreferredFontFamilyName;
 			iconPath = (showIcon ? (action.IconPath ?? "") : "");
 			scale = Win32.Scale(origin);
 			fromPanelWidth = (shown ? currentPanelWidth : (64.0 * scale));
@@ -159,7 +166,7 @@ internal sealed class HintWindow : IDisposable
 	{
 		int num = Math.Max(11, (int)Math.Round(13.0 * scale));
 		int num2 = Math.Max(14, (int)Math.Round(18.0 * scale));
-		using Font font = new Font("Microsoft YaHei UI", num, GraphicsUnit.Pixel);
+		using Font font = IconFontResolver.CreateTextFont("Microsoft YaHei UI", num, GraphicsUnit.Pixel, "Microsoft YaHei", "DengXian", "Segoe UI");
 		using Graphics graphics = Graphics.FromImage(new Bitmap(1, 1));
 		using StringFormat stringFormat = new StringFormat
 		{
@@ -173,8 +180,9 @@ internal sealed class HintWindow : IDisposable
 		bool dark = Dark;
 		int num = Math.Max(11, (int)Math.Round(13.0 * scale));
 		int num2 = Math.Max(14, (int)Math.Round(18.0 * scale));
-		using Font font = new Font("Microsoft YaHei UI", num, GraphicsUnit.Pixel);
-		using Font iconFont = new Font("Segoe Fluent Icons", num2, GraphicsUnit.Pixel);
+		using Font font = IconFontResolver.CreateTextFont("Microsoft YaHei UI", num, GraphicsUnit.Pixel, "Microsoft YaHei", "DengXian", "Segoe UI");
+		using Font iconFont = IconFontResolver.CreateGdiFont(glyph, num2, GraphicsUnit.Pixel, glyphFont);
+		using Font previousIconFont = IconFontResolver.CreateGdiFont(previousGlyph, num2, GraphicsUnit.Pixel, previousGlyphFont);
 		using Graphics graphics = Graphics.FromImage(new Bitmap(1, 1));
 		using StringFormat stringFormat = new StringFormat
 		{
@@ -218,7 +226,7 @@ internal sealed class HintWindow : IDisposable
 			float num11 = 30f * (float)scale;
 			if (previousText.Length > 0)
 			{
-				DrawContent(graphics2, previousText, previousGlyph, previousIconPath, num10 - num11 * (float)progress, 255 - (int)Math.Round(255.0 * progress), num4, num6, num2, font, iconFont, stringFormat, dark);
+				DrawContent(graphics2, previousText, previousGlyph, previousIconPath, num10 - num11 * (float)progress, 255 - (int)Math.Round(255.0 * progress), num4, num6, num2, font, previousIconFont, stringFormat, dark);
 			}
 			DrawContent(graphics2, text, glyph, iconPath, num10 + num11 * (1f - (float)progress), (int)Math.Round(255.0 * progress), num4, num6, num2, font, iconFont, stringFormat, dark);
 		}
@@ -288,6 +296,7 @@ internal sealed class HintWindow : IDisposable
 			{
 				scrolling = false;
 				previousText = (previousGlyph = (previousIconPath = ""));
+				previousGlyphFont = IconFontResolver.PreferredFontFamilyName;
 				animation.Stop();
 				Render(1.0);
 			}
@@ -314,6 +323,7 @@ internal sealed class HintWindow : IDisposable
 			animation.Stop();
 			scrolling = false;
 			previousText = (previousGlyph = (previousIconPath = ""));
+			previousGlyphFont = IconFontResolver.PreferredFontFamilyName;
 			bool num = shown;
 			shown = false;
 			Win32.ShowWindow(handle, 0);

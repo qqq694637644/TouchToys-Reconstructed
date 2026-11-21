@@ -1084,7 +1084,7 @@ internal sealed class VirtualDial : IDisposable
 			double num8 = Math.Clamp((summon.Progress - 0.95) / 0.05, 0.0, 1.0);
 			if ((showLabel || menu) && num8 > 0.0)
 			{
-				using Font font = new Font("Microsoft YaHei UI", (float)(12.0 * Win32.Scale(position) / Scale), GraphicsUnit.Pixel);
+				using Font font = IconFontResolver.CreateTextFont("Microsoft YaHei UI", (float)(12.0 * Win32.Scale(position) / Scale), GraphicsUnit.Pixel, "Microsoft YaHei", "DengXian", "Segoe UI");
 				using StringFormat format = new StringFormat
 				{
 					Alignment = StringAlignment.Center,

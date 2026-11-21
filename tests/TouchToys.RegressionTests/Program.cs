@@ -1,5 +1,7 @@
 using TouchAssistant.Core;
 using TouchAssistant.Models;
+using TouchAssistant.Native;
+using TouchAssistant.Services;
 
 internal static class Program
 {
@@ -28,6 +30,12 @@ internal static class Program
         Run("geometry.bottom-edge-thresholds", BottomEdgeThresholds);
         Run("geometry.reveal-and-dial-index", RevealAndDialIndex);
         Run("relay.idle-reset-guard", RelayIdleResetGuard);
+        Run("wheel.default-action-labels", WheelDefaultActionLabels);
+        Run("fonts.preferred-family-detection", PreferredIconFontDetection);
+        Run("fonts.missing-family-fallback", MissingIconFontFallback);
+        Run("fonts.application-glyph-coverage", ApplicationGlyphCoverage);
+        Run("fonts.settings-and-launcher-migration", IconFontSettingsMigration);
+        Run("fonts.text-family-fallback", TextFontFallback);
 
         Console.WriteLine($"RESULT: {passed} passed, {failed} failed");
         Environment.ExitCode = failed == 0 ? 0 : 1;
@@ -52,6 +60,109 @@ internal static class Program
     {
         if (!condition)
             throw new InvalidOperationException(message);
+    }
+
+    private static void WheelDefaultActionLabels()
+    {
+        Localization.Use("zh-CN");
+        List<GestureAction> actions = Settings.Defaults();
+        string[] expected =
+        {
+            "任务视图", "控制中心", "下个应用", "应用设置",
+            "显示桌面", "切换方舟", "上个应用", "虚拟 Dial"
+        };
+
+        for (int i = 0; i < expected.Length; i++)
+            Equal(expected[i], WheelDrawing.ResolveLabel(actions[i]), $"default wheel label {i}");
+
+        GestureAction custom = GestureAction.BuiltIn("TaskView");
+        custom.Label = "自定义任务";
+        Equal("自定义任务", WheelDrawing.ResolveLabel(custom), "custom label takes precedence");
+
+        custom.Label = "  ";
+        Equal("任务视图", WheelDrawing.ResolveLabel(custom), "whitespace label uses fallback");
+    }
+
+    private static void PreferredIconFontDetection()
+    {
+        IconFontResolver.Initialize();
+        Console.WriteLine($"FONT_PROBE {IconFontResolver.DiagnosticSummary}");
+        int build = Environment.OSVersion.Version.Build;
+        string expected = build >= 22000 && IconFontResolver.IsFontInstalled(IconFontResolver.FluentIcons)
+            ? IconFontResolver.FluentIcons
+            : IconFontResolver.IsFontInstalled(IconFontResolver.Mdl2Assets)
+                ? IconFontResolver.Mdl2Assets
+                : IconFontResolver.IsFontInstalled(IconFontResolver.SegoeUiSymbol)
+                    ? IconFontResolver.SegoeUiSymbol
+                    : "Segoe UI";
+        Equal(expected, IconFontResolver.PreferredFontFamilyName, "preferred family follows installed fonts and OS version");
+        Assert(IconFontResolver.IsFontInstalled(IconFontResolver.PreferredFontFamilyName), "preferred font family is not installed");
+    }
+
+    private static void MissingIconFontFallback()
+    {
+        const string glyph = "\ue713";
+        Assert(!IconFontResolver.IsFontInstalled("TouchToys Missing Font"), "test font unexpectedly exists");
+        Assert(!IconFontResolver.SupportsGlyph("TouchToys Missing Font", glyph), "missing family reported glyph coverage");
+        string resolved = IconFontResolver.ResolveFontFamily(glyph, "TouchToys Missing Font");
+        Assert(IconFontResolver.IsFontInstalled(resolved), "resolver returned an unavailable family");
+        Assert(IconFontResolver.SupportsGlyph(resolved, glyph), $"resolved family {resolved} does not contain {glyph}");
+    }
+
+    private static void ApplicationGlyphCoverage()
+    {
+        string[] glyphs =
+        {
+            "\ue713", "\ue711", "\ue71d", "\ue765", "\ue767", "\ue706", "\ue892", "\ue768", "\ue893",
+            "\ue701", "\ue702", "\ue8be", "\ue709", "\ue88a", "\ue1e3", "\ue72e", "\ue8c6", "\uebc6",
+            "\ue8ef", "\ue722", "\ue720", "\ue9d9", "\ue90c", "\ue7f4", "\ue823", "\ued14", "\uefa5",
+            "\ueca5", "\uea3a", "\ue958", "\ue9e9", "\ue90d", "\ue90e", "\uebfc", "\ue109", "\ue993",
+            "\uec8a", "\ue793", "\ue769", "\uf439", "\ue74f", "\ue8ab", "\ue8a5", "\ue81c", "\ue8b0",
+            "\ue770", "\ue8c8", "\ue77f", "\ue7a7", "\ue721", "\ue80f", "\ue8b7", "\ue734", "\ue74a",
+            "\ue74b", "\ue72b", "\ue72a", "\ue83f", "\ue874", "\ue873", "\uece9"
+        };
+
+        foreach (string glyph in glyphs)
+        {
+            string family = IconFontResolver.ResolveFontFamily(glyph);
+            Assert(IconFontResolver.SupportsGlyph(family, glyph), $"no installed icon family contains glyph U+{(int)glyph[0]:X4}; resolver selected {family}");
+        }
+
+        if (IconFontResolver.IsFontInstalled(IconFontResolver.Mdl2Assets))
+        {
+            foreach (string glyph in glyphs)
+                Assert(IconFontResolver.SupportsGlyph(IconFontResolver.Mdl2Assets, glyph), $"MDL2 fallback is missing glyph U+{(int)glyph[0]:X4}");
+        }
+        else if (Environment.OSVersion.Version.Build < 22000)
+        {
+            throw new InvalidOperationException("Windows 10 requires Segoe MDL2 Assets for the fallback icon font.");
+        }
+    }
+
+    private static void IconFontSettingsMigration()
+    {
+        Settings settings = new();
+        settings.SchemaVersion = 11;
+        settings.Gestures[0].Icon = "\ue713";
+        settings.Gestures[0].IconFont = IconFontResolver.FluentIcons;
+        settings.Launchers.Add(new LauncherEntry
+        {
+            Name = "Font migration test",
+            Target = "font-migration-test.exe",
+            IconGlyph = "\ue713",
+            IconFont = "TouchToys Missing Font"
+        });
+
+        settings.Normalize();
+        string expected = IconFontResolver.ResolveFontFamily("\ue713", IconFontResolver.FluentIcons);
+        Equal(expected, settings.Gestures[0].IconFont, "legacy gesture font migrated");
+        Equal(expected, settings.Launchers[0].IconFont, "legacy launcher font migrated");
+        Equal(12, settings.SchemaVersion, "font migration schema version");
+    }
+
+    private static void TextFontFallback()
+    {
+        Equal("Segoe UI", IconFontResolver.ResolveTextFontFamily("TouchToys Missing Text Font", "Segoe UI"), "text family fallback");
     }
 
     private static void Equal<T>(T expected, T actual, string message)

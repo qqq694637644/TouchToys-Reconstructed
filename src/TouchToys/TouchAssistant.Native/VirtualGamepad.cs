@@ -574,7 +574,7 @@ internal sealed class VirtualGamepad : IDisposable
 					graphics.FillEllipse(brush3, num6 - num5, num7 - num5, num5 * 2f, num5 * 2f);
 					graphics.DrawEllipse(pen, num6 - num5, num7 - num5, num5 * 2f, num5 * 2f);
 				}
-				using Font font = new Font("Microsoft YaHei UI", Math.Clamp(num * 0.23f, 12f, 24f), GraphicsUnit.Pixel);
+				using Font font = IconFontResolver.CreateTextFont("Microsoft YaHei UI", Math.Clamp(num * 0.23f, 12f, 24f), GraphicsUnit.Pixel, "Microsoft YaHei", "DengXian", "Segoe UI");
 				GestureAction appearance = option.Appearance;
 				using SolidBrush brush4 = new SolidBrush(Color.FromArgb((int)((appearance?.TextOpacity ?? 0.9) * 255.0), ColorTranslator.FromHtml(appearance?.TextColor ?? "#FFFFFF")));
 				using StringFormat format = new StringFormat
@@ -623,7 +623,7 @@ internal sealed class VirtualGamepad : IDisposable
 				}
 				else if (text2.Length > 0)
 				{
-					using Font font2 = new Font(appearance?.IconFont ?? "Segoe Fluent Icons", Math.Clamp(num2 * 0.3f, 16f, 28f), GraphicsUnit.Pixel);
+					using Font font2 = IconFontResolver.CreateGdiFont(text2, Math.Clamp(num2 * 0.3f, 16f, 28f), GraphicsUnit.Pixel, appearance?.IconFont);
 					graphics.DrawString(text2, font2, brush4, new RectangleF(6f, (text.Length > 0) ? ((0f - num2) * 0.17f) : 0f, num - 12f, num2), format);
 				}
 				graphics.DrawString(text, font, brush4, new RectangleF(6f, (text2.Length > 0 || iconImage != null) ? (num2 * 0.23f) : 0f, num - 12f, num2), format);

@@ -201,7 +201,7 @@ internal sealed class RectangleHintWindow : Window, IDisposable
 				current.Children.Add(new FontIcon
 				{
 					Glyph = icon,
-					FontFamily = new Microsoft.UI.Xaml.Media.FontFamily(action.IconFont),
+					FontFamily = IconFontResolver.CreateXamlFontFamily(icon, action.IconFont),
 					FontSize = 18.0,
 					Foreground = foreground
 				});

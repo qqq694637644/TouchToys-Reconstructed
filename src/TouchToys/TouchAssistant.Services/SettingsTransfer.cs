@@ -194,7 +194,7 @@ internal static class SettingsTransfer
 				goto IL_017c;
 			}
 			JsonElement value = jsonDocument.RootElement;
-			if (!value.TryGetProperty("SchemaVersion", out var value2) || !value2.TryGetInt32(out var value3) || value3 > 11 || !jsonDocument.RootElement.TryGetProperty("Dial", out value))
+			if (!value.TryGetProperty("SchemaVersion", out var value2) || !value2.TryGetInt32(out var value3) || value3 > 12 || !jsonDocument.RootElement.TryGetProperty("Dial", out value))
 			{
 				goto IL_017c;
 			}

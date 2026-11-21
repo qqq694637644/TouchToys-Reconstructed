@@ -233,7 +233,7 @@ internal sealed class GamepadShield : IDisposable
 					using Pen pen = new Pen(Color.White, 3f);
 					graphics.DrawRectangle(pen, 2, 2, width - 4, height - 4);
 					graphics.DrawLine(pen, width - 26, height - 6, width - 6, height - 26);
-					using Font font = new Font("Microsoft YaHei UI", 18f, GraphicsUnit.Pixel);
+			using Font font = IconFontResolver.CreateTextFont("Microsoft YaHei UI", 18f, GraphicsUnit.Pixel, "Microsoft YaHei", "DengXian", "Segoe UI");
 					graphics.DrawString("防误触区域 · 拖动调整位置", font, Brushes.White, 14f, 14f);
 				}
 			}

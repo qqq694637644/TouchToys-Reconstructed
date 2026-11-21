@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using TouchAssistant.Services;
 
 namespace TouchAssistant.Models;
 
@@ -16,7 +17,7 @@ public sealed class GestureAction
 
 	public string IconPath { get; set; } = "";
 
-	public string IconFont { get; set; } = "Segoe Fluent Icons";
+	public string IconFont { get; set; } = IconFontResolver.PreferredFontFamilyName;
 
 	public int AppearanceDestination { get; set; } = 3;
 

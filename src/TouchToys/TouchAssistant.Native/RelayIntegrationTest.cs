@@ -2,6 +2,7 @@ using System;
 using System.Collections.Concurrent;
 using System.Diagnostics;
 using System.IO;
+using System.Runtime.InteropServices;
 using System.Threading.Tasks;
 using TouchAssistant.Models;
 
@@ -9,8 +10,43 @@ namespace TouchAssistant.Native;
 
 internal static class RelayIntegrationTest
 {
+	[ComImport]
+	[Guid("2e941141-7f97-4756-ba1d-9decde894a3d")]
+	[InterfaceType(ComInterfaceType.InterfaceIsIUnknown)]
+	private interface IApplicationActivationManager
+	{
+		[PreserveSig]
+		int ActivateApplication(string appUserModelId, string arguments, uint options, out uint processId);
+	}
+
+	private static uint ActivatePackagedApplication(string arguments)
+	{
+		Type activationType = Type.GetTypeFromCLSID(new Guid("45BA127D-10A8-46EA-8AB7-56EA9078943C"), throwOnError: true);
+		object activationObject = Activator.CreateInstance(activationType) ?? throw new InvalidOperationException("无法创建应用激活管理器。");
+		IApplicationActivationManager manager = (IApplicationActivationManager)activationObject;
+		try
+		{
+			int result = manager.ActivateApplication(Windows.ApplicationModel.Package.Current.Id.FamilyName + "!App", arguments, 0u, out uint processId);
+			Marshal.ThrowExceptionForHR(result);
+			return processId;
+		}
+		finally
+		{
+			if (Marshal.IsComObject(activationObject))
+			{
+				Marshal.ReleaseComObject(activationObject);
+			}
+		}
+	}
+
 	internal static async Task<string> Run(SettingsStore store, GlobalTouchGestures relay)
 	{
+		string outputDirectory = Environment.GetEnvironmentVariable("TOUCHTOYS_TEST_OUTPUT_DIR");
+		if (string.IsNullOrWhiteSpace(outputDirectory))
+		{
+			outputDirectory = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "TouchToys", "TestOutput");
+		}
+		Directory.CreateDirectory(outputDirectory);
 		int downs = 0;
 		int ups = 0;
 		int updates = 0;
@@ -72,15 +108,8 @@ internal static class RelayIntegrationTest
 			{
 				throw new InvalidOperationException(relay.Status);
 			}
-			ProcessStartInfo processStartInfo = new ProcessStartInfo(Environment.ProcessPath)
-			{
-				UseShellExecute = false,
-				CreateNoWindow = true
-			};
-			processStartInfo.ArgumentList.Add("--inject-relay-fixture");
-			processStartInfo.ArgumentList.Add((x + 100).ToString());
-			processStartInfo.ArgumentList.Add((y + 100).ToString());
-			child = Process.Start(processStartInfo) ?? throw new InvalidOperationException("无法启动触摸注入子进程。");
+			uint childProcessId = ActivatePackagedApplication($"--inject-relay-fixture {x + 100} {y + 100}");
+			child = Process.GetProcessById((int)childProcessId);
 			await child.WaitForExitAsync().WaitAsync(TimeSpan.FromSeconds(20.0));
 			await Task.Delay(300);
 			if (child.ExitCode != 0 || !relay.IsActive || downs != 9 || ups != 9 || updates < 20)
@@ -92,7 +121,7 @@ internal static class RelayIntegrationTest
 		finally
 		{
 			relay.RelayDiagnostic = null;
-			File.WriteAllLines(Path.Combine(AppContext.BaseDirectory, "relay-trace.txt"), trace);
+			File.WriteAllLines(Path.Combine(outputDirectory, "relay-trace.txt"), trace);
 			if (child != null)
 			{
 				if (!child.HasExited)

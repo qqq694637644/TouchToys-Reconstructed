@@ -274,10 +274,6 @@ public class App : Application, IXamlMetadataProvider
 		{
 			Log(e.Exception);
 		};
-	}
-
-	protected override void OnLaunched(LaunchActivatedEventArgs args)
-	{
 		try
 		{
 			InitializeComponent();
@@ -287,7 +283,13 @@ public class App : Application, IXamlMetadataProvider
 			Diagnostics.Error(error, "Application.Initialize");
 			throw;
 		}
+	}
+
+	protected override void OnLaunched(LaunchActivatedEventArgs args)
+	{
 		Diagnostics.Event("Application", "OnLaunched");
+		IconFontResolver.Initialize();
+		Diagnostics.Event("Fonts", IconFontResolver.DiagnosticSummary);
 		if (Array.Exists(Environment.GetCommandLineArgs(), (string x) => x == "--diagnose" || x == "--restore"))
 		{
 			NativeDiagnosticCommand();
@@ -297,6 +299,16 @@ public class App : Application, IXamlMetadataProvider
 		if (num >= 0)
 		{
 			InjectRelayFixture(num);
+			return;
+		}
+		if (Array.Exists(Environment.GetCommandLineArgs(), (string x) => x == "--startup-task-probe"))
+		{
+			_ = StartupTaskProbeAsync();
+			return;
+		}
+		if (Array.Exists(Environment.GetCommandLineArgs(), (string x) => x == "--startup-task-enable-probe"))
+		{
+			_ = StartupTaskEnableProbeAsync();
 			return;
 		}
 		if (!instance.WaitOne(Array.Exists(Environment.GetCommandLineArgs(), (string x) => x == "--elevated-restart") ? 5000 : 0))
@@ -354,14 +366,7 @@ public class App : Application, IXamlMetadataProvider
 		}
 		if (!flag)
 		{
-			try
-			{
-				StartupRegistration.MigrateLegacy();
-			}
-			catch (Exception error)
-			{
-				Diagnostics.Error(error, "Migration.Startup");
-			}
+			_ = MigrateLegacyStartupAsync();
 		}
 		if (!flag && store.Value.AutoNativeInputOpacity && store.Value.TouchKeyboardOpacity < 100)
 		{
@@ -855,6 +860,52 @@ public class App : Application, IXamlMetadataProvider
 		finally
 		{
 			Shutdown();
+		}
+	}
+
+	private async Task MigrateLegacyStartupAsync()
+	{
+		try
+		{
+			await StartupRegistration.MigrateLegacyAsync();
+		}
+		catch (Exception error)
+		{
+			Diagnostics.Error(error, "Migration.Startup");
+		}
+	}
+
+	private async Task StartupTaskProbeAsync()
+	{
+		try
+		{
+			File.WriteAllText(Path.Combine(TestOutputDirectory, "startup-task-probe.txt"), await StartupRegistration.DiagnoseAsync());
+		}
+		catch (Exception error)
+		{
+			File.WriteAllText(Path.Combine(TestOutputDirectory, "startup-task-probe.txt"), error.ToString());
+			Environment.ExitCode = 1;
+		}
+		finally
+		{
+			Exit();
+		}
+	}
+
+	private async Task StartupTaskEnableProbeAsync()
+	{
+		try
+		{
+			File.WriteAllText(Path.Combine(TestOutputDirectory, "startup-task-enable-probe.txt"), await StartupRegistration.EnableAndDiagnoseAsync());
+		}
+		catch (Exception error)
+		{
+			File.WriteAllText(Path.Combine(TestOutputDirectory, "startup-task-enable-probe.txt"), error.ToString());
+			Environment.ExitCode = 1;
+		}
+		finally
+		{
+			Exit();
 		}
 	}
 
@@ -2061,11 +2112,11 @@ public class App : Application, IXamlMetadataProvider
 			Header = Localization.T("开机自启动"),
 			IsOn = StartupRegistration.Enabled
 		};
-		startup.Toggled += delegate
+		startup.Toggled += async delegate
 		{
 			try
 			{
-				StartupRegistration.Enabled = startup.IsOn;
+				await StartupRegistration.SetEnabledAsync(startup.IsOn);
 			}
 			catch (Exception ex)
 			{
@@ -5633,31 +5684,8 @@ public class App : Application, IXamlMetadataProvider
 		if (!_contentLoaded)
 		{
 			_contentLoaded = true;
-			ResourceDictionary appResources = new ResourceDictionary();
-			appResources.MergedDictionaries.Add(new XamlControlsResources());
-			object background;
-			object borderBrush;
-			try
-			{
-				background = appResources["CardBackgroundFillColorDefaultBrush"];
-			}
-			catch (Exception)
-			{
-				background = new SolidColorBrush(Windows.UI.Color.FromArgb(byte.MaxValue, 245, 245, 245));
-			}
-			try
-			{
-				borderBrush = appResources["CardStrokeColorDefaultBrush"];
-			}
-			catch (Exception)
-			{
-				borderBrush = new SolidColorBrush(Windows.UI.Color.FromArgb(byte.MaxValue, 220, 220, 220));
-			}
-			Style settingsCardStyle = new Style(typeof(Border));
-			settingsCardStyle.Setters.Add(new Microsoft.UI.Xaml.Setter(Border.BackgroundProperty, background));
-			settingsCardStyle.Setters.Add(new Microsoft.UI.Xaml.Setter(Border.BorderBrushProperty, borderBrush));
-			appResources["SettingsCardStyle"] = settingsCardStyle;
-			Resources = appResources;
+			Uri resourceLocator = new Uri("ms-appx:///App.xaml");
+			Application.LoadComponent(this, resourceLocator);
 		}
 	}
 

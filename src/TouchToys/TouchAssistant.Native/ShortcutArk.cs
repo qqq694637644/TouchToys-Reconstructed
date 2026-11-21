@@ -1389,11 +1389,11 @@ internal sealed class ShortcutArk : IDisposable
 				}
 				else if (action.Icon.Length > 0)
 				{
-					using Font font = new Font(action.IconFont, 20f * (float)num, GraphicsUnit.Pixel);
+					using Font font = IconFontResolver.CreateGdiFont(action.Icon, 20f * (float)num, GraphicsUnit.Pixel, action.IconFont);
 					graphics.DrawString(action.Icon, font, Brushes.White, new PointF(10f * (float)num, 11f * (float)num));
 					num10 = 42f * (float)num;
 				}
-				using Font font2 = new Font("Microsoft YaHei UI", 12f * (float)num, GraphicsUnit.Pixel);
+				using Font font2 = IconFontResolver.CreateTextFont("Microsoft YaHei UI", 12f * (float)num, GraphicsUnit.Pixel, "Microsoft YaHei", "DengXian", "Segoe UI");
 				using StringFormat format = new StringFormat
 				{
 					Alignment = StringAlignment.Center,
@@ -1456,7 +1456,7 @@ internal sealed class ShortcutArk : IDisposable
 		}
 		using Bitmap image = new Bitmap(1, 1);
 		using Graphics graphics = Graphics.FromImage(image);
-		using Font font = new Font("Microsoft YaHei UI", 12f, GraphicsUnit.Pixel);
+		using Font font = IconFontResolver.CreateTextFont("Microsoft YaHei UI", 12f, GraphicsUnit.Pixel, "Microsoft YaHei", "DengXian", "Segoe UI");
 		double num = Math.Clamp(graphics.MeasureString(Caption(bubble.Action), font).Width + 28f + (float)((bubble.Action.Icon.Length > 0 || bubble.Action.IconPath.Length > 0) ? 30 : 0) + (float)((bubble.Pinned || profile.AllPinned) ? 14 : 0), 48.0, Math.Max(48.0, (double)Win32.Monitor(position).rcWork.Width / Win32.Scale(position) - 24.0));
 		measured[bubble] = (text, num);
 		return num;
